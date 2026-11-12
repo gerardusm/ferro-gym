@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ferro Gym</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one phone-width column, fixed tab bar. Type does the shouting (stamped, condensed
+   numerals like the lettering on a weight plate); colour is reserved for the plates themselves:
+   each training day wears the colour of a competition bumper plate. */
+:root{
+  --bg:#eceef2; --surface:#ffffff; --ink:#141922; --muted:#5a6473; --line:#d3d8e0;
+  --accent:#141922; --on-accent:#ffffff;
+  --p-red:#cf3a2e; --p-blue:#1e5bd0; --p-yellow:#e0a400; --p-green:#1c8f50;
+  --good:#1c8f50; --warn:#b4530a;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1217; --surface:#191e26; --ink:#eef1f5; --muted:#99a3b3; --line:#2a313c;
+    --accent:#eef1f5; --on-accent:#0f1217;
+    --p-red:#e4574b; --p-blue:#4d86f0; --p-yellow:#efb81f; --p-green:#35b06d;
+    --good:#35b06d; --warn:#e58a3c; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1217; --surface:#191e26; --ink:#eef1f5; --muted:#99a3b3; --line:#2a313c;
+  --accent:#eef1f5; --on-accent:#0f1217;
+  --p-red:#e4574b; --p-blue:#4d86f0; --p-yellow:#efb81f; --p-green:#35b06d;
+  --good:#35b06d; --warn:#e58a3c; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.45 var(--body);-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid var(--p-blue);outline-offset:2px}
+h1,h2,h3,p{margin:0}
+#app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;position:relative}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px 8px}
+.brand{font:800 26px/1 var(--display);letter-spacing:.06em;text-transform:uppercase}
+.brand i{font-style:normal;display:inline-block;width:.55em;height:.55em;border-radius:50%;background:var(--p-red);box-shadow:inset 0 0 0 3px var(--bg),inset 0 0 0 5px var(--p-red);margin-left:.18em}
+.icon-btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:40px;height:40px;display:grid;place-items:center}
+#view{flex:1;overflow-y:auto;padding:4px 16px 24px;display:flex;flex-direction:column;gap:16px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--surface);padding-bottom:env(safe-area-inset-bottom)}
+.tabs button{border:0;background:none;padding:12px 4px 11px;font:600 13px var(--body);color:var(--muted);border-top:3px solid transparent;margin-top:-1px}
+.tabs button[aria-current="page"]{color:var(--ink);border-top-color:var(--ink)}
+
+.eyebrow{font:600 12px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.big{font:800 46px/.95 var(--display);text-transform:uppercase;letter-spacing:.01em;text-wrap:balance}
+.h2{font:800 24px/1 var(--display);text-transform:uppercase;letter-spacing:.03em}
+.muted{color:var(--muted)} .small{font-size:14px}
+.num{font-variant-numeric:tabular-nums}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;gap:12px}
+.row.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 16px;font-weight:600;min-height:46px}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font:800 20px var(--display);letter-spacing:.06em;text-transform:uppercase;padding:14px 18px}
+.btn.block{width:100%}
+.btn.sm{min-height:36px;padding:6px 12px;font-size:14px;border-radius:10px}
+.btn.danger{color:var(--p-red)}
+.link{border:0;background:none;padding:6px 0;color:var(--muted);text-decoration:underline;font-size:14px}
+
+.pl0{--pc:var(--p-red);--pt:#fff}.pl1{--pc:var(--p-blue);--pt:#fff}.pl2{--pc:var(--p-yellow);--pt:#1c1500}
+.pl3{--pc:var(--p-green);--pt:#fff}.pl4{--pc:var(--muted);--pt:var(--bg)}
+.plate{flex:none;width:40px;height:40px;border-radius:50%;background:var(--pc);color:var(--pt);display:grid;place-items:center;font:800 20px/1 var(--display);box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--pt) 30%,transparent)}
+.plate.lg{width:56px;height:56px;font-size:28px;box-shadow:inset 0 0 0 4px color-mix(in srgb,var(--pt) 30%,transparent)}
+
+/* 12-week block */
+.block{display:flex;gap:10px}
+.block .ph{display:flex;flex-direction:column;gap:6px;min-width:0}
+.block .segs{display:flex;gap:3px}
+.block .seg{height:10px;flex:1;min-width:10px;border-radius:3px;background:var(--line)}
+.block .seg.past{background:var(--muted)}
+.block .seg.now{background:var(--ink);box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ink)}
+.block .ph span{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.block .ph.cur span{color:var(--ink)}
+
+.exlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.exlist li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
+.exlist li:first-child{border-top:0}
+.exlist li{align-items:center}
+.exlist b{font-weight:600;flex:1;min-width:0}
+.th{width:60px;height:40px;object-fit:cover;border-radius:7px;flex:none;background:var(--line);display:block}
+button.thb{border:0;padding:0;background:none;border-radius:7px;flex:none}
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.photos figure{margin:0;position:relative}
+.photos img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:9px;display:block;background:var(--line)}
+.photos figcaption{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:5px}
+.exlist .t{font:600 18px/1.3 var(--display);letter-spacing:.03em;white-space:nowrap}
+
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.wd{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:5px;min-height:74px}
+.wd.today{border-color:var(--ink);border-width:2px;padding:7px 0 6px}
+.wd small{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase}
+.wd strong{font:800 20px/1 var(--display)}
+.dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font:800 13px/1 var(--display)}
+.dot.done{background:var(--pc);color:var(--pt)}
+.dot.plan{border:2px solid var(--pc);color:var(--ink)}
+.dot.miss{border:2px dashed var(--muted);color:var(--muted)}
+.dot.none{visibility:hidden}
+
+/* calendar */
+.cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cal{display:grid;grid-template-columns:30px repeat(7,1fr);gap:4px}
+.cal .hd{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);text-align:center;padding:2px 0}
+.cal .wk{font:600 13px var(--display);color:var(--muted);display:grid;place-items:center;letter-spacing:.04em}
+.cal .wk.dl{color:var(--warn)}
+.cal button.day{border:1px solid transparent;background:var(--surface);border-radius:9px;padding:6px 0 5px;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:56px}
+.cal button.day.out{background:none;opacity:.45}
+.cal button.day.today{border-color:var(--ink)}
+.cal button.day.sel{background:var(--ink);color:var(--bg)}
+.cal button.day.sel .dot.plan{color:var(--bg)}
+.cal .day b{font:600 15px/1 var(--body);font-variant-numeric:tabular-nums}
+.cal{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.cal button.day.src{opacity:.3}
+.cal button.day.drop{outline:3px solid var(--p-blue);outline-offset:-3px}
+.ghost{position:fixed;z-index:50;pointer-events:none;transform:translate(-50%,-135%) scale(1.35);box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--pt) 30%,transparent),0 8px 18px rgba(0,0,0,.4)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend .dot{width:14px;height:14px}
+
+/* session */
+.sess-top{position:sticky;top:-4px;z-index:2;background:var(--bg);padding:6px 0 10px;display:flex;align-items:center;gap:12px}
+.clock{font:800 30px/1 var(--display);letter-spacing:.03em}
+.ex h3{font:800 23px/1.05 var(--display);text-transform:uppercase;letter-spacing:.02em}
+.hint{font-size:14px;border-left:3px solid var(--ink);padding:2px 0 2px 10px}
+details summary{font-size:14px;color:var(--muted);cursor:pointer}
+details p{font-size:14px;margin-top:6px}
+.sets{display:flex;flex-direction:column;gap:8px}
+.set{display:grid;grid-template-columns:22px 1fr 1fr 48px;gap:8px;align-items:center}
+.set.one{grid-template-columns:22px 1fr 48px}
+.set .n{font:800 18px var(--display);color:var(--muted);text-align:center}
+.fld{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:0 10px;min-width:0}
+.fld input{border:0;background:none;width:100%;min-width:0;padding:11px 0;font:800 22px/1 var(--display);letter-spacing:.02em;outline:none}
+.fld:focus-within{border-color:var(--ink)}
+.fld span{font-size:12px;font-weight:600;color:var(--muted)}
+.fld input::placeholder{color:var(--muted);opacity:.6}
+.chk{width:48px;height:46px;border-radius:10px;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--muted)}
+.set.ok .chk{background:var(--good);border-color:var(--good);color:#fff}
+.set.ok .fld{border-color:transparent}
+.rest{position:absolute;left:12px;right:12px;bottom:calc(58px + env(safe-area-inset-bottom));z-index:5;background:var(--accent);color:var(--on-accent);border-radius:14px;padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.rest[hidden]{display:none}
+.rest .clock{font-size:40px}
+.rest button{border:1px solid color-mix(in srgb,var(--on-accent) 35%,transparent);background:none;color:inherit;border-radius:9px;padding:8px 12px;font-weight:600;font-size:14px}
+.rest .bar{height:4px;border-radius:2px;background:color-mix(in srgb,var(--on-accent) 25%,transparent);overflow:hidden}
+.rest .bar i{display:block;height:100%;background:var(--on-accent);width:100%}
+
+/* routines */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px;min-height:40px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.item{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:0}
+.mini{display:flex;align-items:center;gap:6px;font-size:14px;flex-wrap:wrap}
+.mini input{width:52px;text-align:center;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:7px 2px;font-weight:600}
+.sq{width:36px;height:36px;border:1px solid var(--line);background:var(--surface);border-radius:9px;display:grid;place-items:center;font-weight:700;flex:none}
+.sq:disabled{opacity:.35}
+.text-in,.sel{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:11px 12px;min-height:46px}
+
+/* progress */
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 10px}
+.tile b{display:block;font:800 34px/1 var(--display)}
+.tile span{font-size:12px;color:var(--muted);font-weight:600}
+.bars{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;align-items:end;height:110px}
+.bars .b{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%}
+.bars .b i{display:block;width:100%;border-radius:5px 5px 0 0;background:var(--line);min-height:3px}
+.bars .b.full i{background:var(--good)} .bars .b.some i{background:var(--muted)}
+.bars .b small{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bars .b em{font:800 14px var(--display);font-style:normal}
+svg.chart{width:100%;height:auto;display:block}
+.rec{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
+.rec:first-child{border-top:0}
+
+.sheet{position:absolute;inset:0;z-index:10;background:rgba(0,0,0,.5);display:flex;align-items:flex-end}
+.sheet[hidden]{display:none}
+.sheet-card{background:var(--surface);width:100%;max-height:86%;overflow-y:auto;border-radius:18px 18px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
+.pick{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:none;padding:12px 0}
+#toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;z-index:20;max-width:90%;text-align:center}
+#toast[hidden]{display:none}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.switch input{width:22px;height:22px;accent-color:var(--ink)}
+.status{display:flex;align-items:center;gap:8px;font-size:14px}
+.status i{width:10px;height:10px;border-radius:50%;background:var(--warn)} .status.ok i{background:var(--good)}
+@media (prefers-reduced-motion:no-preference){.sheet-card{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px)}to{transform:none}}}
+@media (max-width:360px){.big{font-size:38px}.tile b{font-size:28px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="brand">Ferro<i aria-hidden="true"></i></div>
+    <button class="icon-btn" id="gear" data-act="go" data-to="ajustos" aria-label="Ajustos">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>
+    </button>
+  </header>
+  <main id="view"></main>
+  <div class="rest" id="rest" hidden>
+    <div class="row between">
+      <div><div class="eyebrow" style="color:inherit;opacity:.7">Descans</div><div class="clock num" id="restClock">1:30</div></div>
+      <div class="row" style="gap:6px">
+        <button data-act="restAdj" data-n="-15" aria-label="Treu 15 segons">−15</button>
+        <button data-act="restAdj" data-n="15" aria-label="Afegeix 15 segons">+15</button>
+        <button data-act="restStop">Salta</button>
+      </div>
+    </div>
+    <div class="bar"><i id="restBar"></i></div>
+  </div>
+  <nav class="tabs" id="tabs" aria-label="Seccions">
+    <button data-act="go" data-to="avui">Avui</button>
+    <button data-act="go" data-to="calendari">Calendari</button>
+    <button data-act="go" data-to="rutines">Rutines</button>
+    <button data-act="go" data-to="progres">Progrés</button>
+  </nav>
+  <div class="sheet" id="sheet" hidden><div class="sheet-card" id="sheetBody" role="dialog" aria-modal="true"></div></div>
+  <div id="toast" role="status" hidden></div>
+</div>
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const parse=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(a,b-1,c)};
+const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return iso(d)};
+const dow=s=>(parse(s).getDay()+6)%7;
+const monday=s=>addDays(s,-dow(s));
+const diff=(a,b)=>Math.round((parse(a)-parse(b))/864e5);
+const today=()=>iso(new Date());
+const num=v=>{const n=parseFloat(String(v).replace(",","."));return isFinite(n)?n:NaN};
+const fmt=n=>String(Math.round(n*100)/100).replace(".",",");
+const clone=o=>JSON.parse(JSON.stringify(o));
+const WD=["dl","dt","dc","dj","dv","ds","dg"];
+const WDL=["dilluns","dimarts","dimecres","dijous","divendres","dissabte","diumenge"];
+const MO=["gener","febrer","març","abril","maig","juny","juliol","agost","setembre","octubre","novembre","desembre"];
+const deMes=m=>(/^[aeiou]/.test(MO[m])?"d'":"de ")+MO[m];
+const longDate=s=>{const d=parse(s);return WDL[dow(s)]+" "+d.getDate()+" "+deMes(d.getMonth())};
+const shortDate=s=>{const d=parse(s);return d.getDate()+"/"+(d.getMonth()+1)};
+const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+":"+pad(s%60)};
+const CHECK='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+/* ---------- exercise library ---------- */
+// id, name, group, type (w = pes i reps, bw = només reps, t = segons, c = minuts), weight step, cue
+const LIB=[
+["leg_press","Premsa de cames","Cames","w",10,"Peus a l'amplada de les espatlles. Baixa fins que els genolls facin uns 90° sense que el lumbar s'enlairi del seient. No bloquegis els genolls a dalt."],
+["goblet","Esquat goblet","Cames","w",2,"Manuella contra el pit, colzes cap avall. Seu enrere i avall amb l'esquena recta; els genolls segueixen la línia dels peus."],
+["rdl","Pes mort romanès amb manuelles","Cames","w",2,"Genolls una mica flexionats. Tira el maluc enrere i baixa les manuelles arran de les cames fins a notar els isquiotibials. Esquena plana tota l'estona."],
+["lunge","Gambades enrere amb manuelles","Cames","w",2,"Fes un pas llarg enrere i baixa recte. El genoll de davant no ha de passar gaire la punta del peu. Compta les repeticions per cama."],
+["leg_ext","Extensió de quàdriceps","Cames","w",5,"Ajusta el respatller perquè el genoll quedi alineat amb l'eix de la màquina. Puja en 1 segon, baixa en 2 o 3."],
+["leg_curl","Curl femoral en màquina","Cames","w",5,"Maluc enganxat al seient. Flexiona fins al final i torna a poc a poc, sense deixar caure el pes."],
+["hip_thrust","Pont de glutis","Cames","w",5,"Esquena alta recolzada al banc, barbeta cap al pit. Empeny amb els talons i prem els glutis a dalt un segon."],
+["calf","Elevació de bessons","Cames","w",5,"Recorregut complet: baixa el taló del tot, puja tant com puguis i atura't un segon a dalt."],
+["db_bench","Press de banca amb manuelles","Pit","w",2,"Escàpules juntes i enganxades al banc, peus a terra. Baixa les manuelles a l'alçada del pit amb els colzes a uns 45° del cos."],
+["chest_machine","Press de pit en màquina","Pit","w",5,"Ajusta el seient perquè les nanses quedin a mig pit. Empeny sense separar les espatlles del respatller."],
+["incline_db","Press inclinat amb manuelles","Pit","w",2,"Banc a uns 30°. Mateixa tècnica que el press pla; no arquegis el lumbar en excés."],
+["pushup","Flexions","Pit","bw",0,"Cos en línia recta del cap als talons. Si costen, recolza les mans en un banc."],
+["lat_pulldown","Politja al pit","Esquena","w",5,"Agafada una mica més ampla que les espatlles. Porta la barra a la part alta del pit tirant dels colzes cap avall, sense balancejar el tronc."],
+["seated_row","Rem assegut en politja","Esquena","w",5,"Esquena recta, pit enfora. Tira cap al melic i ajunta les escàpules al final. Torna estirant els braços del tot."],
+["db_row","Rem amb manuella a una mà","Esquena","w",2,"Mà i genoll recolzats al banc, esquena plana. Puja la manuella cap al maluc. Compta les repeticions per braç."],
+["row_machine","Rem en màquina","Esquena","w",5,"Pit contra el coixí. Tira dels colzes enrere i mantén un segon la contracció."],
+["db_shoulder","Press d'espatlles amb manuelles","Espatlles","w",2,"Assegut amb respatller. Puja les manuelles sense xocar-les i baixa-les fins a l'alçada de les orelles."],
+["shoulder_machine","Press d'espatlles en màquina","Espatlles","w",5,"Lumbar enganxat al respatller. Empeny cap amunt sense bloquejar els colzes amb força."],
+["lateral_raise","Elevacions laterals","Espatlles","w",1,"Pes lleuger. Puja els braços fins a l'alçada de les espatlles, colzes una mica flexionats, sense impuls."],
+["face_pull","Face pull","Espatlles","w",2.5,"Politja a l'alçada de la cara, corda. Tira cap al front separant les mans i obrint els colzes."],
+["biceps_curl","Curl de bíceps amb manuelles","Braços","w",1,"Colzes enganxats al costat. Puja sense balancejar el cos i baixa a poc a poc."],
+["triceps_push","Extensió de tríceps en politja","Braços","w",2.5,"Colzes quiets al costat del cos. Estira els braços del tot i torna fins a 90°."],
+["plank","Planxa","Core","t",0,"Colzes sota les espatlles, glutis i abdomen en tensió. El maluc no ha de caure ni pujar."],
+["side_plank","Planxa lateral","Core","t",0,"Colze sota l'espatlla, cos en línia recta. Compta els segons per costat."],
+["dead_bug","Dead bug","Core","bw",0,"De panxa enlaire, lumbar enganxat a terra. Estira braç i cama contraris a poc a poc. Compta les repeticions per costat."],
+["crunch","Encongiments abdominals","Core","bw",0,"Mans al pit. Enlaira només les escàpules i expira en pujar."],
+["bike","Bicicleta estàtica","Cardio","c",0,"Ritme suau i constant."],
+["elliptical","El·líptica","Cardio","c",0,"Ritme suau i constant."],
+["treadmill","Cinta: caminar amb pendent","Cardio","c",0,"Pendent del 5 al 8 %, sense agafar-te a les baranes."],
+["rower","Màquina de rem","Cardio","c",0,"Empeny amb les cames primer, després tira amb els braços."]
+].map(a=>({id:a[0],name:a[1],group:a[2],type:a[3],inc:a[4],cue:a[5]}));
+const GROUPS=["Cames","Pit","Esquena","Espatlles","Braços","Core","Cardio"];
+const UNIT={w:"reps",bw:"reps",t:"s",c:"min"};
+const PHASES=[
+ {name:"Adaptació",w:[1,4],sets:2,min:12,max:15,desc:"Pesos lleugers i moltes repeticions per aprendre bé cada moviment."},
+ {name:"Base",w:[5,8],sets:3,min:10,max:12,desc:"Una sèrie més per exercici i pesos que ja costin al final."},
+ {name:"Progressió",w:[9,11],sets:3,min:8,max:10,desc:"Menys repeticions i més pes."},
+ {name:"Descàrrega",w:[12,12],sets:2,min:10,max:12,deload:true,desc:"Setmana suau: un 10 % menys de pes per recuperar abans del bloc següent."}
+];
+
+/* ---------- state ---------- */
+const mkIt=(ex,sets,min,max)=>{const t=(LIB.find(e=>e.id===ex)||{}).type;return t==="c"?{ex,sets:1,min:10,max:10}:t==="t"?{ex,sets:3,min:20,max:45}:{ex,sets:sets||3,min:min||8,max:max||12}};
+const TPL={
+ full:{name:"cos sencer",desc:"Tres sessions de cos sencer (A, B i C) que es van alternant.",r:[
+  ["Cos sencer A",["leg_press","db_bench","lat_pulldown","db_shoulder","leg_curl","plank","bike"]],
+  ["Cos sencer B",["rdl","chest_machine","seated_row","lateral_raise","leg_ext","dead_bug","elliptical"]],
+  ["Cos sencer C",["goblet","incline_db","db_row","lunge","biceps_curl","triceps_push","side_plank"]]]},
+ ul:{name:"tors i cama",desc:"Quatre sessions: dues de tors i dues de cama, alternades.",r:[
+  ["Tors A",["db_bench","seated_row","db_shoulder","lat_pulldown","biceps_curl","triceps_push"]],
+  ["Cama A",["leg_press","rdl","leg_ext","calf","plank","bike"]],
+  ["Tors B",["incline_db","row_machine","shoulder_machine","lat_pulldown","face_pull","biceps_curl"]],
+  ["Cama B",["goblet","leg_curl","lunge","hip_thrust","dead_bug","elliptical"]]]},
+ ppl:{name:"empenta, tracció i cama",desc:"Tres sessions que es repeteixen: empenta (pit, espatlles, tríceps), tracció (esquena, bíceps) i cama.",r:[
+  ["Empenta",["db_bench","db_shoulder","incline_db","lateral_raise","triceps_push"]],
+  ["Tracció",["lat_pulldown","seated_row","db_row","face_pull","biceps_curl"]],
+  ["Cama",["leg_press","rdl","leg_ext","leg_curl","calf","plank"]]]}
+};
+const tplRoutines=k=>TPL[k].r.map((x,i)=>({id:"ABCDE"[i],tag:"ABCDE"[i],name:x[0],items:x[1].map(e=>mkIt(e))}));
+const tplFor=n=>n<=3?"full":n===4?"ul":"ppl";
+const PRESET={1:[0],2:[0,3],3:[0,2,4],4:[0,1,3,4],5:[0,1,2,3,4],6:[0,1,2,3,4,5],7:[0,1,2,3,4,5,6]};
+function defaults(){
+  return {t:0,
+    config:{days:[0,2,4],flex:false,perWeek:3,tpl:"full",start:today(),rest:90,program:true,sound:true},
+    routines:tplRoutines("full"),
+    overrides:{},customEx:[],active:null,log:{}};
+}
+let S=defaults();
+const ui={tab:"avui",session:false,month:null,sel:null,rsel:0,pex:null,search:""};
+const LS="ferro-gym-v1";
+try{const raw=localStorage.getItem(LS);if(raw){const o=JSON.parse(raw);if(o&&o.config&&o.routines)S=Object.assign(defaults(),o);}}catch(e){}
+function EX(id){return LIB.find(e=>e.id===id)||S.customEx.find(e=>e.id===id)||{id,name:"Exercici esborrat",group:"Cames",type:"w",inc:2.5,cue:""}}
+const hasImg=id=>LIB.some(e=>e.id===id);
+const thumb=id=>hasImg(id)?'<img class="th" src="img/'+id+'-1.jpg" alt="" loading="lazy" width="60" height="40">':"";
+const photos=e=>hasImg(e.id)?'<div class="photos"><figure><img src="img/'+e.id+'-0.jpg" alt="'+esc(e.name)+', posició inicial" loading="lazy" width="520" height="347"><figcaption>Inici</figcaption></figure><figure><img src="img/'+e.id+'-1.jpg" alt="'+esc(e.name)+', posició final" loading="lazy" width="520" height="347"><figcaption>Final</figcaption></figure></div>':"";
+const entry=d=>{const e=S.log[d];return e&&!e.del?e:null};
+const logDates=()=>Object.keys(S.log).filter(d=>!S.log[d].del).sort();
+
+/* ---------- storage: this device first, the account when available ---------- */
+const store={db:null,uid:null,status:"local",dirty:new Set(),busy:false,timer:null};
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+function queue(id,wait){store.dirty.add(id);clearTimeout(store.timer);store.timer=setTimeout(flush,wait||1200)}
+function saveCfg(wait){schedReset();S.t=Date.now();saveLocal();queue("config",wait)}
+function saveLog(date){saveLocal();queue("log-"+date.slice(0,7))}
+function body(id){
+  if(id==="config")return clone({t:S.t,config:S.config,routines:S.routines,overrides:S.overrides,customEx:S.customEx,active:S.active});
+  const m=id.slice(4),days={};Object.keys(S.log).forEach(d=>{if(d.startsWith(m))days[d]=S.log[d]});return clone({days});
+}
+async function flush(){
+  if(!store.db||store.busy)return;store.busy=true;
+  while(store.dirty.size){
+    const id=store.dirty.values().next().value;store.dirty.delete(id);
+    try{await store.db.doc("data/users/"+store.uid+"/"+id).set(body(id));}
+    catch(e){if(e&&e.code==="unavailable"){store.dirty.add(id);store.timer=setTimeout(flush,8000);}else{store.status="local";if(ui.tab==="ajustos")render();}break;}
+  }
+  store.busy=false;
+}
+async function initCloud(){
+  try{
+    if(!window.claude||!window.claude.use)return;
+    const[db,user]=await Promise.all([window.claude.use("db"),window.claude.use("user")]);
+    if(!db||!user)return;
+    const uid=await user.id();if(!uid)return;
+    const snap=await Promise.race([db.collection("data/users/"+uid).get(),new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),10000))]);
+    store.db=db;store.uid=uid;
+    const remoteMonths={};let hasCfg=false;
+    snap.docs.forEach(d=>{const b=d.data();if(!b)return;
+      if(d.id==="config"){hasCfg=true;
+        if((b.t||0)>(S.t||0)&&b.config&&b.routines){const editing=ui.session&&S.active;
+          S.t=b.t;S.config=clone(b.config);S.routines=clone(b.routines);S.overrides=clone(b.overrides||{});S.customEx=clone(b.customEx||[]);
+          if(!editing)S.active=b.active?clone(b.active):null;}
+        else if((S.t||0)>(b.t||0))store.dirty.add("config");
+      }else if(d.id.indexOf("log-")===0&&b.days){remoteMonths[d.id]=b.days;
+        Object.keys(b.days).forEach(k=>{const r=b.days[k];if(!S.log[k]||(r.t||0)>(S.log[k].t||0))S.log[k]=clone(r);});}
+    });
+    if(!hasCfg&&S.t)store.dirty.add("config");
+    Object.keys(S.log).forEach(k=>{const id="log-"+k.slice(0,7),r=(remoteMonths[id]||{})[k];if(!r||(S.log[k].t||0)>(r.t||0))store.dirty.add(id);});
+    schedReset();store.status="cloud";saveLocal();flush();
+    if(!ui.session&&$("#sheet").hidden)render();
+  }catch(e){store.status="local"}
+}
+
+/* ---------- plan ---------- */
+const perWeek=()=>S.config.flex?(S.config.perWeek||3):S.config.days.length;
+function weekDone(date){const m=monday(date);return logDates().filter(d=>d>=m&&d<addDays(m,7)).length}
+function nextRoutine(){const ds=logDates();if(!S.routines.length)return null;if(!ds.length)return S.routines[0];
+  const i=S.routines.findIndex(r=>r.id===S.log[ds[ds.length-1]].rid);return S.routines[(i+1)%S.routines.length]}
+function todayPlan(){const td=today();if(!S.config.flex||Object.prototype.hasOwnProperty.call(S.overrides,td))return planFor(td);
+  return weekDone(td)<perWeek()?nextRoutine():null}
+/* Sessions follow one sequence (A, B, C, A...) in date order. A day's override is null (no session),
+   "+" (an extra session that takes whatever comes next) or a routine id (that routine, fixed). */
+let sch={until:null,n:0,map:{}};
+function schedReset(){sch={until:null,n:0,map:{}}}
+const hasOv=d=>Object.prototype.hasOwnProperty.call(S.overrides,d);
+const isBaseDay=d=>!S.config.flex&&d>=S.config.start&&S.config.days.includes(dow(d));
+function planFor(date){
+  const c=S.config,o=S.overrides,R=S.routines,len=R.length;if(!len)return null;
+  if(c.flex||date<c.start){const v=hasOv(date)?o[date]:null;return v?(R.find(r=>r.id===v)||R[0]):null}
+  if(!sch.until)sch.until=addDays(c.start,-1);
+  while(sch.until<date){const d=addDays(sch.until,1);sch.until=d;let r=null;
+    if(hasOv(d)){const v=o[d];if(v){r=(v!=="+"&&R.find(x=>x.id===v))||R[sch.n%len];sch.n++}}
+    else if(c.days.includes(dow(d))){r=R[sch.n%len];sch.n++}
+    if(r)sch.map[d]=r.id}
+  const id=sch.map[date];return id?(R.find(r=>r.id===id)||null):null;
+}
+function setPlan(date,v){
+  if(!v){if(isBaseDay(date))S.overrides[date]=null;else delete S.overrides[date]}
+  else if(v==="+"){if(isBaseDay(date))delete S.overrides[date];else if(S.config.flex)S.overrides[date]=(nextRoutine()||S.routines[0]).id;else S.overrides[date]="+"}
+  else S.overrides[date]=v;
+  schedReset();
+}
+const movable=d=>d>=today()&&!entry(d)&&!!planFor(d);
+const canDrop=(from,to)=>to!==from&&to>=today()&&!entry(to);
+function moveSession(from,to){
+  if(!movable(from)||!canDrop(from,to))return false;const a=planFor(from),b=planFor(to),pin=hasOv(from)&&S.overrides[from]&&S.overrides[from]!=="+";
+  if(b){S.overrides[from]=b.id;S.overrides[to]=a.id;schedReset()}
+  else{setPlan(from,null);setPlan(to,pin||S.config.flex?a.id:"+")}
+  ui.sel=to;ui.month=to.slice(0,7)+"-01";ui.moving=null;saveCfg();render();
+  const now=planFor(to);
+  toast(b?a.name+" i "+b.name+" intercanviades.":now&&now.id!==a.id?"Sessió moguda a "+longDate(to)+". Les rutines segueixen l'ordre "+S.routines.map(r=>r.tag).join(", ")+".":a.name+" moguda a "+longDate(to)+".");return true}
+function weekInfo(date){
+  const w=Math.floor(diff(monday(date),monday(S.config.start))/7);if(w<0)return null;
+  const bw=w%12+1;return{week:bw,block:Math.floor(w/12)+1,pi:PHASES.findIndex(p=>bw>=p.w[0]&&bw<=p.w[1]),get phase(){return PHASES[this.pi]}};
+}
+function target(it,date){
+  const e=EX(it.ex),wi=S.config.program?weekInfo(date):null,t={sets:it.sets,min:it.min,max:it.max,deload:false};
+  if(wi&&(e.type==="w"||e.type==="bw")){t.sets=wi.phase.sets;if(e.type==="w"){t.min=wi.phase.min;t.max=wi.phase.max}t.deload=!!wi.phase.deload}
+  return t;
+}
+function tLabel(e,t){if(e.type==="c")return fmt(t.max)+" min";const r=t.min===t.max?t.min:t.min+"–"+t.max;return t.sets+" × "+r+(e.type==="t"?" s":"")}
+function estMin(r,date){let s=0;r.items.forEach(it=>{const e=EX(it.ex),t=target(it,date);s+=e.type==="c"?t.max*60:t.sets*(45+S.config.rest)});return Math.max(5,Math.round(s/300)*5)}
+const pl=rid=>{const i=S.routines.findIndex(r=>r.id===rid);return "pl"+(i<0?4:Math.min(i,4))};
+function lastPerf(id){const ds=logDates();for(let i=ds.length-1;i>=0;i--){const it=S.log[ds[i]].items.find(x=>x.ex===id);if(it&&it.sets.length)return{date:ds[i],sets:it.sets}}return null}
+function bestW(id){let b=null;logDates().forEach(d=>S.log[d].items.forEach(it=>{if(it.ex===id)it.sets.forEach(s=>{if(b==null||s[0]>b)b=s[0]})}));return b}
+function suggest(id,t){
+  const e=EX(id),lp=lastPerf(id);
+  if(e.type==="c")return{w:"",r:t.max,msg:"Ritme suau: has de poder mantenir una conversa."};
+  if(!lp)return e.type==="w"
+    ?{w:"",r:t.max,msg:"Primera vegada: tria un pes amb què facis "+t.max+" repeticions i te'n quedin 2 o 3 de marge."}
+    :{w:"",r:t.min,msg:"Primera vegada: comença pel mínim i mira com et va."};
+  const lo=Math.min.apply(null,lp.sets.map(s=>s[1]));
+  if(e.type!=="w"){const u=e.type==="t"?" s":"",g=Math.max(t.min,Math.min(t.max,lo+(e.type==="t"?5:1)));
+    return{w:"",r:g,msg:lo>=t.max?"Ja arribes al màxim: afegeix una sèrie o prova una variant més difícil.":"L'últim dia: "+lo+u+". Avui busca "+g+u+" per sèrie."}}
+  const w=Math.max.apply(null,lp.sets.map(s=>s[0])),at=lp.sets.filter(s=>s[0]===w).map(s=>s[1]),loW=Math.min.apply(null,at);
+  if(t.deload){const d=Math.round(w*0.9*2)/2;return{w:d,r:t.min,msg:"Setmana de descàrrega: baixa a "+fmt(d)+" kg i no arribis al límit."}}
+  if(loW>=t.max&&at.length>=2){const n=w+e.inc;return{w:n,r:t.min,msg:"Vas arribar a "+t.max+" a totes les sèries. Puja a "+fmt(n)+" kg."}}
+  const g=Math.max(t.min,Math.min(t.max,loW+1));
+  return{w,r:g,msg:"Mateix pes ("+fmt(w)+" kg). Busca "+g+" repeticions per sèrie."};
+}
+function lastLine(id){const lp=lastPerf(id);if(!lp)return"";const e=EX(id);
+  const s=e.type==="w"?lp.sets.map(x=>fmt(x[0])+" kg × "+x[1]).join(" · "):lp.sets.map(x=>x[1]+(e.type==="t"?" s":e.type==="c"?" min":"")).join(" · ");
+  return "Última ("+shortDate(lp.date)+"): "+s}
+
+/* ---------- session ---------- */
+function mkItem(ex,base,date){const t=target(base,date),sg=suggest(ex,t);
+  return{ex,t,sg,sets:Array.from({length:t.sets},()=>({w:sg.w===""?"":fmt(sg.w),r:"",ok:false}))}}
+function startSession(rid){
+  const r=S.routines.find(x=>x.id===rid);if(!r)return;const d=today();
+  S.active={date:d,rid:r.id,name:r.name,tag:r.tag,started:Date.now(),items:r.items.map(it=>mkItem(it.ex,it,d))};
+  ui.session=true;closeSheet();saveCfg();render();$("#view").scrollTop=0;
+}
+let rest={end:0,total:0,timer:null},audio=null;
+function beep(){if(!S.config.sound||!audio)return;try{[0,.25,.5].forEach(o=>{const os=audio.createOscillator(),g=audio.createGain();os.frequency.value=880;os.connect(g);g.connect(audio.destination);
+  const t=audio.currentTime+o;g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.3,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+.18);os.start(t);os.stop(t+.2)})}catch(e){}}
+function startRest(sec){rest.total=sec;rest.end=Date.now()+sec*1000;$("#rest").hidden=false;tick()}
+function stopRest(){rest.end=0;$("#rest").hidden=true}
+function tick(){
+  const c=$("#sessClock");if(c&&S.active)c.textContent=mmss((Date.now()-S.active.started)/1000);
+  if(!rest.end)return;const left=(rest.end-Date.now())/1000;
+  if(left<=0){stopRest();beep();toast("Descans acabat. Següent sèrie.");return}
+  $("#restClock").textContent=mmss(left);$("#restBar").style.width=Math.max(0,Math.min(100,left/rest.total*100))+"%";
+}
+setInterval(tick,500);
+function finish(){
+  const A=S.active;if(!A)return;
+  const items=A.items.map(it=>({ex:it.ex,sets:it.sets.filter(s=>s.ok).map(s=>[EX(it.ex).type==="w"?(num(s.w)||0):0,num(s.r)||0])})).filter(it=>it.sets.length);
+  if(!items.length){openSheet('<h2 class="h2">Encara no has marcat cap sèrie</h2><p class="muted">Marca les sèries fetes amb el botó de la dreta, o descarta la sessió.</p><button class="btn block" data-act="closeSheet">Continua entrenant</button><button class="btn block danger" data-act="discard">Descarta la sessió</button>');return}
+  const prs=[];let vol=0,nsets=0;
+  items.forEach(it=>{const e=EX(it.ex);it.sets.forEach(s=>{vol+=s[0]*s[1];nsets++});
+    if(e.type==="w"){const prev=bestW(it.ex),mx=Math.max.apply(null,it.sets.map(s=>s[0]));if(prev!=null&&mx>prev)prs.push(e.name+": "+fmt(mx)+" kg")}});
+  const dur=Math.max(1,Math.round((Date.now()-A.started)/6e4)),old=entry(A.date);
+  S.log[A.date]={rid:A.rid,name:A.name,tag:A.tag,dur:(old?old.dur:0)+dur,t:Date.now(),items:old?old.items.concat(items):items};
+  const date=A.date;S.active=null;ui.session=false;stopRest();saveLog(date);saveCfg(50);render();
+  openSheet('<div class="eyebrow">Sessió desada</div><h2 class="big">Bona feina</h2>'+
+    '<div class="tiles"><div class="tile"><b class="num">'+dur+'</b><span>minuts</span></div><div class="tile"><b class="num">'+nsets+'</b><span>sèries</span></div><div class="tile"><b class="num">'+fmt(Math.round(vol))+'</b><span>kg moguts</span></div></div>'+
+    (prs.length?'<div class="card" style="background:var(--bg)"><div class="eyebrow">Rècords nous</div>'+prs.map(p=>"<div><b>"+esc(p)+"</b></div>").join("")+"</div>":"")+
+    '<button class="btn primary block" data-act="closeSheet">Fet</button>');
+}
+
+/* ---------- views ---------- */
+function blockBar(wi){
+  return '<div class="block">'+PHASES.map((p,i)=>{let segs="";for(let w=p.w[0];w<=p.w[1];w++)segs+='<i class="seg'+(w<wi.week?" past":w===wi.week?" now":"")+'"></i>';
+    return '<div class="ph'+(i===wi.pi?" cur":"")+'" style="flex:'+(p.w[1]-p.w[0]+1)+'"><div class="segs">'+segs+"</div><span>"+(p.deload?"Desc.":p.name)+"</span></div>"}).join("")+"</div>";
+}
+function exList(r,date){return '<ul class="exlist">'+r.items.map(it=>{const e=EX(it.ex);return "<li>"+(hasImg(e.id)?'<button class="thb" data-act="info" data-ex="'+esc(e.id)+'" aria-label="Fotos de '+esc(e.name)+'">'+thumb(e.id)+"</button>":"")+"<b>"+esc(e.name)+'</b><span class="t num">'+tLabel(e,target(it,date))+"</span></li>"}).join("")+"</ul>"}
+function logList(en){return '<ul class="exlist">'+en.items.map(it=>{const e=EX(it.ex);
+  const s=e.type==="w"?it.sets.map(x=>fmt(x[0])+"×"+x[1]).join("  "):it.sets.map(x=>x[1]).join("  ")+" "+UNIT[e.type];
+  return "<li><b>"+esc(e.name)+'</b><span class="t num">'+s+"</span></li>"}).join("")+"</ul>"}
+function dotFor(date){
+  const en=entry(date),td=today();
+  if(en)return '<span class="dot done '+pl(en.rid)+'">'+esc(en.tag||"")+"</span>";
+  const p=planFor(date);if(!p)return '<span class="dot none"></span>';
+  return '<span class="dot '+(date<td?"miss":"plan "+pl(p.id))+'">'+esc(p.tag)+"</span>";
+}
+function vAvui(){
+  const td=today(),d=parse(td),wi=weekInfo(td),en=entry(td),p=todayPlan(),fx=S.config.flex;let h="";
+  h+='<section><div class="eyebrow">'+WDL[dow(td)]+'</div><h1 class="big">'+d.getDate()+" "+deMes(d.getMonth())+"</h1></section>";
+  if(S.config.program&&wi)h+='<section class="card"><div class="row between"><div><div class="eyebrow">Bloc '+wi.block+" · setmana "+wi.week+' de 12</div><div class="h2" style="margin-top:4px">'+wi.phase.name+'</div></div><div class="h2 num">'+wi.phase.sets+" × "+wi.phase.min+"–"+wi.phase.max+"</div></div>"+blockBar(wi)+'<p class="small muted">'+wi.phase.desc+"</p></section>";
+  if(S.active)h+='<section class="card '+pl(S.active.rid)+'"><div class="row"><span class="plate lg">'+esc(S.active.tag)+'</span><div class="grow"><div class="eyebrow">Sessió en curs</div><div class="h2">'+esc(S.active.name)+'</div></div></div><button class="btn primary block" data-act="resume">Continua la sessió</button></section>';
+  else if(en)h+='<section class="card '+pl(en.rid)+'"><div class="row"><span class="plate lg">'+esc(en.tag||"")+'</span><div class="grow"><div class="eyebrow" style="color:var(--good)">Feta avui · '+en.dur+' min</div><div class="h2">'+esc(en.name)+"</div></div></div>"+logList(en)+'<button class="btn block" data-act="pickRoutine">Fes una altra sessió</button></section>';
+  else if(p)h+='<section class="card '+pl(p.id)+'"><div class="row"><span class="plate lg">'+esc(p.tag)+'</span><div class="grow"><div class="eyebrow">'+(fx?"Et toca · queden "+(perWeek()-weekDone(td))+" aquesta setmana":"Avui toca")+" · uns "+estMin(p,td)+' min</div><div class="h2">'+esc(p.name)+"</div></div></div>"+exList(p,td)+'<button class="btn primary block" data-act="start" data-rid="'+esc(p.id)+'">Comença la sessió</button></section>';
+  else{let nx=null;for(let i=1;i<=21&&!nx;i++){const x=addDays(td,i),r=planFor(x);if(r)nx={date:x,r}}
+    h+='<section class="card"><div class="eyebrow">Avui</div><div class="h2">'+(fx?"Setmana completa":"Dia de descans")+'</div><p class="muted">'+(fx?"Ja has fet les "+perWeek()+" sessions que et vas proposar aquesta setmana.":nx?"Propera sessió: "+longDate(nx.date)+", "+esc(nx.r.name)+".":"No hi ha cap sessió programada. Tria els dies d'entrenament als ajustos.")+'</p><button class="btn block" data-act="pickRoutine">Entrena igualment</button></section>'}
+  const m=monday(td);let done=0,planned=0,w="";
+  for(let i=0;i<7;i++){const x=addDays(m,i);if(entry(x))done++;if(planFor(x)||entry(x))planned++;if(i===6&&fx)planned=perWeek();
+    w+='<div class="wd'+(x===td?" today":"")+'"><small>'+WD[i]+'</small><strong class="num">'+parse(x).getDate()+"</strong>"+dotFor(x)+"</div>"}
+  h+='<section style="display:flex;flex-direction:column;gap:10px"><div class="row between"><h2 class="h2">Aquesta setmana</h2><span class="h2 num">'+done+"/"+planned+'</span></div><div class="week">'+w+"</div></section>";
+  return h;
+}
+function vCal(){
+  const td=today();if(!ui.month)ui.month=td.slice(0,7)+"-01";if(!ui.sel)ui.sel=td;
+  const first=ui.month,mo=parse(first).getMonth(),yr=parse(first).getFullYear();let g='<div class="hd"></div>'+WD.map(x=>'<div class="hd">'+x+"</div>").join("");
+  let d=monday(first);
+  for(let r=0;r<6;r++){if(r>3&&parse(d).getMonth()!==mo)break;
+    const wi=S.config.program?weekInfo(addDays(d,6)>=S.config.start?(d<S.config.start?S.config.start:d):d):null;
+    g+='<div class="wk'+(wi&&wi.phase.deload?" dl":"")+'" title="'+(wi?"Setmana "+wi.week+" · "+wi.phase.name:"")+'">'+(wi?"S"+wi.week:"")+"</div>";
+    for(let i=0;i<7;i++){const out=parse(d).getMonth()!==mo;
+      g+='<button class="day'+(out?" out":"")+(d===td?" today":"")+(d===ui.sel?" sel":"")+'" data-act="selDay" data-d="'+d+'" aria-label="'+longDate(d)+'"><b>'+parse(d).getDate()+"</b>"+dotFor(d)+"</button>";d=addDays(d,1)}}
+  let h='<section class="cal-head"><button class="sq" data-act="month" data-n="-1" aria-label="Mes anterior">‹</button><h1 class="h2" style="font-size:30px">'+MO[mo]+" "+yr+'</h1><button class="sq" data-act="month" data-n="1" aria-label="Mes següent">›</button></section>';
+  if(ui.moving&&!movable(ui.moving))ui.moving=null;
+  if(ui.moving)h+='<section class="card" style="background:var(--accent);color:var(--on-accent);border-color:var(--accent)"><div class="row between"><div class="grow"><b>Toca el dia on la vols moure</b><div class="small" style="opacity:.75">'+esc(planFor(ui.moving).name)+" · "+longDate(ui.moving)+'</div></div><button class="btn sm" style="color:var(--ink)" data-act="moveCancel">Cancel·la</button></div></section>';
+  h+='<section class="cal">'+g+"</section>";
+  h+='<div class="legend"><span><i class="dot done pl1"></i>Feta</span><span><i class="dot plan pl1"></i>Programada</span><span><i class="dot miss"></i>No feta</span><span><b style="color:var(--warn)">S12</b>Descàrrega</span></div><p class="small muted">Per moure una sessió, mantén-la premuda i arrossega-la a un altre dia. Si aquell dia ja en té una, s\'intercanvien.</p>';
+  const s=ui.sel,en=entry(s),p=s===td?todayPlan():planFor(s),wi=S.config.program?weekInfo(s):null;
+  h+='<section class="card"><div class="row between"><div><div class="eyebrow">'+longDate(s)+"</div>"+(wi&&s>=S.config.start?'<div class="small muted">Setmana '+wi.week+" · "+wi.phase.name+"</div>":"")+"</div>"+(s!==td?'<button class="btn sm" data-act="selDay" data-d="'+td+'">Avui</button>':"")+"</div>";
+  if(en)h+='<div class="row '+pl(en.rid)+'"><span class="plate">'+esc(en.tag||"")+'</span><div class="grow"><b>'+esc(en.name)+'</b><div class="small" style="color:var(--good)">Feta · '+en.dur+" min</div></div></div>"+logList(en)+'<button class="link danger" style="color:var(--p-red);text-align:left" data-act="askDelLog" data-d="'+s+'">Esborra aquesta sessió</button>';
+  else{
+    if(p)h+='<div class="row '+pl(p.id)+'"><span class="plate">'+esc(p.tag)+'</span><div class="grow"><b>'+esc(p.name)+'</b><div class="small muted">'+(s<td?"No es va fer":"Uns "+estMin(p,s)+" min")+"</div></div></div>"+(s>=td&&!ui.moving?'<div class="row" style="flex-wrap:wrap;gap:8px"><button class="btn grow" data-act="moveMode">Mou</button><button class="btn grow" data-act="addSess">Canvia la rutina</button><button class="btn grow danger" data-act="rmSess">Treu-la</button></div>':"")+exList(p,s);
+    else h+='<p class="muted">'+(S.config.flex?"Sense sessió fixada. Amb l'horari flexible entrenes els dies que vulguis; si vols, fixa'n una aquí.":"Dia de descans.")+"</p>";
+    if(s===td&&p&&!S.active)h+='<button class="btn primary block" data-act="start" data-rid="'+esc(p.id)+'">Comença la sessió</button>';
+    if(s>=td&&!ui.moving){
+      if(!p)h+='<button class="btn block" data-act="addSess">+ Afegeix una sessió aquest dia</button>';
+      h+='<p class="small muted">En afegir o treure una sessió, les següents es recol·loquen per ordre.</p>'}
+  }
+  return h+"</section>";
+}
+function vSession(){
+  const A=S.active;let h='<div class="sess-top '+pl(A.rid)+'"><span class="plate">'+esc(A.tag)+'</span><div class="grow"><div class="small muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(A.name)+'</div><div class="clock num" id="sessClock">'+mmss((Date.now()-A.started)/1000)+'</div></div><button class="btn sm" data-act="minimize">Surt</button><button class="btn sm" style="background:var(--accent);color:var(--on-accent);border-color:var(--accent)" data-act="finish">Acaba</button></div>';
+  A.items.forEach((it,i)=>{const e=EX(it.ex),ll=lastLine(it.ex),one=e.type!=="w";
+    h+='<section class="card ex"><div class="row between" style="align-items:flex-start"><div class="grow"><div class="eyebrow">'+e.group+" · "+tLabel(e,it.t)+"</div><h3>"+esc(e.name)+'</h3></div><button class="btn sm" data-act="swap" data-i="'+i+'">Canvia</button></div>'+
+      photos(e)+(ll?'<div class="small muted num">'+ll+"</div>":"")+'<div class="hint">'+esc(it.sg.msg)+"</div>"+
+      (e.cue?"<details><summary>Com es fa</summary><p>"+esc(e.cue)+"</p></details>":"")+'<div class="sets">';
+    it.sets.forEach((s,j)=>{h+='<div class="set'+(one?" one":"")+(s.ok?" ok":"")+'"><span class="n">'+(j+1)+"</span>"+
+      (one?"":'<label class="fld"><input id="w-'+i+"-"+j+'" data-in="w" data-i="'+i+'" data-j="'+j+'" inputmode="decimal" autocomplete="off" aria-label="Pes de la sèrie '+(j+1)+'" value="'+esc(s.w)+'" placeholder="0"><span>kg</span></label>')+
+      '<label class="fld"><input id="r-'+i+"-"+j+'" data-in="r" data-i="'+i+'" data-j="'+j+'" inputmode="numeric" autocomplete="off" aria-label="'+(e.type==="t"?"Segons":e.type==="c"?"Minuts":"Repeticions")+" de la sèrie "+(j+1)+'" value="'+esc(s.r)+'" placeholder="'+it.sg.r+'"><span>'+UNIT[e.type]+"</span></label>"+
+      '<button class="chk" data-act="check" data-i="'+i+'" data-j="'+j+'" aria-pressed="'+s.ok+'" aria-label="Sèrie '+(j+1)+" feta\">"+CHECK+"</button></div>"});
+    h+='</div><div class="row"><button class="btn sm" data-act="addSet" data-i="'+i+'">+ Sèrie</button>'+(it.sets.length>1?'<button class="btn sm" data-act="delSet" data-i="'+i+'">− Sèrie</button>':"")+"</div></section>"});
+  return h+'<button class="btn primary block" data-act="finish">Acaba la sessió</button><button class="link" data-act="askDiscard">Descarta la sessió</button><div style="height:90px"></div>';
+}
+function vRutines(){
+  if(ui.rsel>=S.routines.length)ui.rsel=0;const r=S.routines[ui.rsel];
+  let h='<section><h1 class="big">Rutines</h1><p class="muted" style="margin-top:6px">Són teves: canvia exercicis, ordre i sèries. El calendari les va alternant.</p></section>';
+  h+='<div class="chips">'+S.routines.map((x,i)=>'<button class="chip" data-act="rsel" data-i="'+i+'" aria-pressed="'+(i===ui.rsel)+'">'+esc(x.tag+" · "+x.name)+"</button>").join("")+(S.routines.length<5?'<button class="chip" data-act="addRoutine">+ Nova</button>':"")+"</div>";
+  h+='<section class="card '+pl(r.id)+'"><div class="row"><span class="plate lg">'+esc(r.tag)+'</span><div class="grow"><label class="eyebrow" for="rname">Nom</label><input class="text-in" id="rname" data-ch="rname" value="'+esc(r.name)+'" maxlength="40"></div></div>';
+  if(S.config.program)h+='<p class="small muted">Amb el programa de 12 setmanes actiu, les sèries i repeticions dels exercicis amb pes les marca la fase. El que posis aquí s\'aplica a la resta, i a tots si el desactives als ajustos.</p>';
+  r.items.forEach((it,i)=>{const e=EX(it.ex);
+    h+='<div class="item"><div class="row">'+(hasImg(e.id)?'<button class="thb" data-act="info" data-ex="'+esc(e.id)+'" aria-label="Fotos de '+esc(e.name)+'">'+thumb(e.id)+"</button>":"")+'<div class="grow"><b>'+esc(e.name)+'</b><div class="small muted">'+e.group+'</div></div><button class="sq" data-act="mv" data-i="'+i+'" data-n="-1" aria-label="Puja" '+(i===0?"disabled":"")+'>↑</button><button class="sq" data-act="mv" data-i="'+i+'" data-n="1" aria-label="Baixa" '+(i===r.items.length-1?"disabled":"")+'>↓</button><button class="sq" data-act="rmItem" data-i="'+i+'" aria-label="Treu">✕</button></div>'+
+    '<div class="mini">'+(e.type==="c"?'<input id="mx-'+i+'" data-ch="imax" data-i="'+i+'" inputmode="numeric" value="'+it.max+'" aria-label="Minuts"> min'
+      :'<input id="st-'+i+'" data-ch="isets" data-i="'+i+'" inputmode="numeric" value="'+it.sets+'" aria-label="Sèries"> sèries ×<input id="mn-'+i+'" data-ch="imin" data-i="'+i+'" inputmode="numeric" value="'+it.min+'" aria-label="Mínim">a<input id="mx-'+i+'" data-ch="imax" data-i="'+i+'" inputmode="numeric" value="'+it.max+'" aria-label="Màxim"> '+(e.type==="t"?"s":"reps"))+"</div></div>"});
+  h+='<button class="btn block" data-act="addEx">+ Afegeix un exercici</button>'+(S.routines.length>1?'<button class="link" style="color:var(--p-red);text-align:left" data-act="askDelRoutine">Esborra aquesta rutina</button>':"")+"</section>";
+  return h;
+}
+function chart(pts,unit){
+  const W=340,H=160,L=38,R=14,T=14,B=24,ys=pts.map(p=>p.y);let lo=Math.min.apply(null,ys),hi=Math.max.apply(null,ys);if(lo===hi){lo-=1;hi+=1}
+  const X=i=>pts.length===1?(L+W-R)/2:L+i*(W-L-R)/(pts.length-1),Y=v=>T+(hi-v)*(H-T-B)/(hi-lo);
+  const line=pts.map((p,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(p.y).toFixed(1)).join(" "),last=pts.length-1;
+  return '<svg class="chart" viewBox="0 0 '+W+" "+H+'" role="img" aria-label="Evolució"><g stroke="var(--line)" stroke-width="1"><line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(hi)+'" y2="'+Y(hi)+'"/><line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y((hi+lo)/2)+'" y2="'+Y((hi+lo)/2)+'"/><line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(lo)+'" y2="'+Y(lo)+'"/></g>'+
+   '<g fill="var(--muted)" font-size="11" font-family="Figtree,sans-serif"><text x="'+(L-6)+'" y="'+(Y(hi)+4)+'" text-anchor="end">'+fmt(hi)+'</text><text x="'+(L-6)+'" y="'+(Y(lo)+4)+'" text-anchor="end">'+fmt(lo)+'</text><text x="'+L+'" y="'+(H-6)+'">'+shortDate(pts[0].x)+"</text>"+(last?'<text x="'+(W-R)+'" y="'+(H-6)+'" text-anchor="end">'+shortDate(pts[last].x)+"</text>":"")+"</g>"+
+   (last?'<path d="'+line+" L"+X(last)+" "+Y(lo)+" L"+X(0)+" "+Y(lo)+' Z" fill="var(--p-blue)" opacity=".12"/><path d="'+line+'" fill="none" stroke="var(--p-blue)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>':"")+
+   pts.map((p,i)=>'<circle cx="'+X(i)+'" cy="'+Y(p.y)+'" r="'+(i===last?5:2.5)+'" fill="var(--p-blue)"/>').join("")+
+   '<text x="'+Math.min(X(last),W-R-4)+'" y="'+Math.max(12,Y(pts[last].y)-10)+'" text-anchor="end" font-size="13" font-weight="700" fill="var(--ink)" font-family="Figtree,sans-serif">'+fmt(pts[last].y)+" "+unit+"</text></svg>";
+}
+function vProgres(){
+  const ds=logDates(),td=today();let h='<section><h1 class="big">Progrés</h1></section>';
+  if(!ds.length)return h+'<section class="card"><div class="h2">Encara no hi ha sessions</div><p class="muted">Quan acabis la primera sessió, aquí veuràs l\'evolució de cada exercici, els teus rècords i les setmanes complertes.</p><button class="btn block" data-act="go" data-to="avui">Ves a la sessió d\'avui</button></section>';
+  let vol=0;ds.forEach(d=>S.log[d].items.forEach(it=>it.sets.forEach(s=>vol+=s[0]*s[1])));
+  const tgt=Math.max(1,perWeek()),wk=[];for(let i=7;i>=0;i--){const m=addDays(monday(td),-7*i);wk.push({m,n:ds.filter(d=>d>=m&&d<addDays(m,7)).length})}
+  let streak=0;for(let i=wk.length-1;i>=0;i--){if(wk[i].n>=tgt)streak++;else if(i===wk.length-1)continue;else break}
+  h+='<div class="tiles"><div class="tile"><b class="num">'+ds.length+'</b><span>sessions</span></div><div class="tile"><b class="num">'+streak+'</b><span>setmanes completes seguides</span></div><div class="tile"><b class="num">'+(vol>=10000?fmt(Math.round(vol/100)/10)+" t":fmt(Math.round(vol)))+"</b><span>"+(vol>=10000?"mogudes":"kg moguts")+"</span></div></div>";
+  const mx=Math.max(tgt,Math.max.apply(null,wk.map(w=>w.n)));
+  h+='<section class="card"><div class="row between"><h2 class="h2">Sessions per setmana</h2><span class="small muted">objectiu '+tgt+'</span></div><div class="bars">'+wk.map(w=>'<div class="b '+(w.n>=tgt?"full":w.n?"some":"")+'"><em class="num">'+(w.n||"")+'</em><i style="height:'+(w.n/mx*70)+'%"></i><small>'+shortDate(w.m)+"</small></div>").join("")+"</div></section>";
+  const ids=[];ds.forEach(d=>S.log[d].items.forEach(it=>{if(!ids.includes(it.ex))ids.push(it.ex)}));
+  if(!ui.pex||!ids.includes(ui.pex))ui.pex=ids.find(id=>EX(id).type==="w")||ids[0];
+  const e=EX(ui.pex),pts=[];ds.forEach(d=>S.log[d].items.forEach(it=>{if(it.ex===ui.pex)pts.push({x:d,y:Math.max.apply(null,it.sets.map(s=>e.type==="w"?s[0]:s[1]))})}));
+  h+='<section class="card"><label class="h2" for="pex">Evolució</label><select class="sel" id="pex" data-ch="pex">'+ids.map(id=>'<option value="'+esc(id)+'"'+(id===ui.pex?" selected":"")+">"+esc(EX(id).name)+"</option>").join("")+"</select>"+chart(pts,e.type==="w"?"kg":UNIT[e.type])+'<p class="small muted">'+(e.type==="w"?"Pes més alt de cada sessió.":"Millor sèrie de cada sessió.")+"</p></section>";
+  const recs=ids.filter(id=>EX(id).type==="w").map(id=>{let b=null;ds.forEach(d=>S.log[d].items.forEach(it=>{if(it.ex===id)it.sets.forEach(s=>{if(!b||s[0]>b.w||(s[0]===b.w&&s[1]>b.r))b={w:s[0],r:s[1],d}})}));return{id,b}});
+  if(recs.length)h+='<section class="card"><h2 class="h2">Rècords</h2><div>'+recs.map(x=>'<div class="rec"><div><b>'+esc(EX(x.id).name)+'</b><div class="small muted">'+shortDate(x.b.d)+'</div></div><span class="h2 num">'+fmt(x.b.w)+" kg × "+x.b.r+"</span></div>").join("")+"</div></section>";
+  return h;
+}
+function vAjustos(){
+  const c=S.config,n=perWeek(),rec=tplFor(n);
+  return '<section><h1 class="big">Ajustos</h1></section>'+
+  '<section class="card"><h2 class="h2">Dies d\'entrenament</h2>'+
+  '<div class="row between"><div><b>Sessions per setmana</b></div><div class="row" style="gap:6px"><button class="sq" data-act="nDays" data-n="-1" aria-label="Un dia menys" '+(n<=1?"disabled":"")+'>−</button><span class="h2 num" style="min-width:36px;text-align:center;font-size:32px">'+n+'</span><button class="sq" data-act="nDays" data-n="1" aria-label="Un dia més" '+(n>=7?"disabled":"")+'>+</button></div></div>'+
+  '<div class="chips"><button class="chip" data-act="mode" data-v="fix" aria-pressed="'+!c.flex+'">Dies fixos</button><button class="chip" data-act="mode" data-v="flex" aria-pressed="'+!!c.flex+'">Flexible</button></div>'+
+  (c.flex?'<p class="small muted">Sense dies fixos: entrenes quan et vagi bé. L\'app et proposa la rutina següent i compta les sessions de la setmana fins a arribar a '+n+".</p>"
+   :'<div class="chips" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">'+WD.map((x,i)=>'<button class="chip" style="padding:8px 0" data-act="day" data-i="'+i+'" aria-pressed="'+c.days.includes(i)+'" aria-label="'+WDL[i]+'">'+x+'</button>').join("")+'</div><p class="small muted">Toca un dia per afegir-lo o treure\'l. El calendari hi va repartint les rutines per ordre.</p>')+
+  (rec!==(c.tpl||"full")?'<div class="card" style="background:var(--bg)"><p class="small"><b>Amb '+n+(n===1?" dia":" dies")+" va millor un repartiment de "+TPL[rec].name+".</b> "+TPL[rec].desc+'</p><button class="btn block" data-act="askTpl" data-k="'+rec+'">Adapta les rutines</button></div>':"")+
+  '<div><label class="eyebrow" for="start">Inici del programa</label><input class="text-in" type="date" id="start" data-ch="start" value="'+c.start+'" style="margin-top:6px"></div></section>'+
+  '<section class="card"><label class="switch" for="prog"><span><b>Programa de 12 setmanes</b><br><span class="small muted">Adaptació, base, progressió i una setmana de descàrrega. Es repeteix en acabar.</span></span><input type="checkbox" id="prog" data-ch="program"'+(c.program?" checked":"")+"></label></section>"+
+  '<section class="card"><div class="row between"><div><b>Descans entre sèries</b><div class="small muted">El compte enrere comença en marcar una sèrie.</div></div><div class="row" style="gap:6px"><button class="sq" data-act="restCfg" data-n="-15" aria-label="Menys descans">−</button><span class="h2 num" style="min-width:52px;text-align:center">'+mmss(c.rest)+'</span><button class="sq" data-act="restCfg" data-n="15" aria-label="Més descans">+</button></div></div>'+
+  '<label class="switch" for="snd"><span><b>So en acabar el descans</b></span><input type="checkbox" id="snd" data-ch="sound"'+(c.sound?" checked":"")+"></label></section>"+
+  '<section class="card"><h2 class="h2">Les teves dades</h2><div class="status'+(store.status==="cloud"?" ok":"")+'"><i></i><span>'+(store.status==="cloud"?"Desades al teu compte de Claude. Les veuràs a qualsevol dispositiu.":"Desades només en aquest dispositiu ara mateix.")+'</span></div><button class="btn block" data-act="export">Copia una còpia de seguretat</button><button class="btn block danger" data-act="askReset">Esborra-ho tot i torna a començar</button></section><p class="small muted">Fotos dels exercicis: Free Exercise DB, de domini públic.</p>';
+}
+function render(){
+  const inS=ui.session&&S.active;
+  $("#view").innerHTML=inS?vSession():({avui:vAvui,calendari:vCal,rutines:vRutines,progres:vProgres,ajustos:vAjustos}[ui.tab]||vAvui)();
+  $("#tabs").hidden=!!inS;$("#gear").hidden=!!inS;
+  document.querySelectorAll("#tabs button").forEach(b=>{if(b.dataset.to===ui.tab)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
+}
+function openSheet(html){$("#sheetBody").innerHTML=html;$("#sheet").hidden=false}
+function closeSheet(){$("#sheet").hidden=true;$("#sheetBody").innerHTML=""}
+let toastT;function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+function go(tab){ui.tab=tab;ui.session=false;try{if(location.hash!=="#"+tab)location.hash=tab}catch(e){}render();$("#view").scrollTop=0}
+function exPicker(mode,i){
+  const used=mode==="swap"?S.active.items.map(x=>x.ex):S.routines[ui.rsel].items.map(x=>x.ex),grp=mode==="swap"?EX(S.active.items[i].ex).group:null;
+  const all=LIB.concat(S.customEx).filter(e=>!used.includes(e.id)&&(!grp||e.group===grp));let h='<h2 class="h2">'+(mode==="swap"?"Canvia per un altre de "+grp.toLowerCase():"Afegeix un exercici")+"</h2><div>";
+  GROUPS.forEach(g=>{const l=all.filter(e=>e.group===g);if(!l.length)return;if(!grp)h+='<div class="eyebrow" style="margin-top:12px;padding-bottom:6px">'+g+"</div>";
+    l.forEach(e=>h+='<button class="pick" data-act="'+(mode==="swap"?"doSwap":"doAdd")+'" data-ex="'+esc(e.id)+'" data-i="'+(i||0)+'">'+thumb(e.id)+'<span class="grow"><b>'+esc(e.name)+"</b></span><span class=\"muted\">+</span></button>")});
+  h+="</div>";
+  if(mode==="add")h+='<div class="card" style="background:var(--bg)"><div class="eyebrow">O crea el teu</div><input class="text-in" id="nx-name" placeholder="Nom de l\'exercici" maxlength="50" aria-label="Nom de l\'exercici"><div class="row"><select class="sel" id="nx-group" aria-label="Grup muscular">'+GROUPS.map(g=>"<option>"+g+"</option>").join("")+'</select><select class="sel" id="nx-type" aria-label="Com es compta"><option value="w">Pes i repeticions</option><option value="bw">Només repeticions</option><option value="t">Segons</option><option value="c">Minuts</option></select></div><button class="btn block" data-act="newEx">Crea i afegeix</button></div>';
+  openSheet(h+'<button class="btn block" data-act="closeSheet">Tanca</button>');
+}
+const confirmSheet=(title,text,act,label,extra)=>openSheet('<h2 class="h2">'+title+'</h2><p class="muted">'+text+'</p><button class="btn block danger" data-act="'+act+'" '+(extra||"")+">"+label+'</button><button class="btn block" data-act="closeSheet">Cancel·la</button>');
+
+/* ---------- actions ---------- */
+const ACT={
+  go:d=>go(d.to),closeSheet,
+  info:d=>{const e=EX(d.ex);openSheet('<div><div class="eyebrow">'+e.group+'</div><h2 class="h2" style="margin-top:4px">'+esc(e.name)+"</h2></div>"+photos(e)+(e.cue?"<p>"+esc(e.cue)+"</p>":"")+'<button class="btn block" data-act="closeSheet">Tanca</button>')},
+  start:d=>startSession(d.rid),
+  resume:()=>{ui.session=true;render()},
+  minimize:()=>{ui.session=false;render();toast("La sessió continua oberta. La trobaràs a Avui.")},
+  pickRoutine:()=>openSheet('<h2 class="h2">Quina sessió vols fer?</h2><div>'+S.routines.map(r=>'<button class="pick '+pl(r.id)+'" data-act="start" data-rid="'+esc(r.id)+'"><span class="plate">'+esc(r.tag)+'</span><span class="grow"><b>'+esc(r.name)+'</b><br><span class="small muted">'+r.items.length+" exercicis · uns "+estMin(r,today())+" min</span></span></button>").join("")+'</div><button class="btn block" data-act="closeSheet">Tanca</button>'),
+  check:d=>{const it=S.active.items[+d.i],s=it.sets[+d.j],e=EX(it.ex);
+    if(s.ok){s.ok=false}else{
+      if(e.type==="w"&&!(num(s.w)>=0)){toast("Posa el pes d'aquesta sèrie.");const f=$("#w-"+d.i+"-"+d.j);if(f)f.focus();return}
+      if(!(num(s.r)>0))s.r=String(it.sg.r);s.ok=true;
+      if(e.type==="w"){const w=s.w;it.sets.forEach(x=>{if(!x.ok&&x.w==="")x.w=w})}
+      try{if(S.config.sound){audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==="suspended")audio.resume()}}catch(err){}
+      const lastOne=+d.i===S.active.items.length-1&&it.sets.every(x=>x.ok);
+      if(e.type!=="c"&&!lastOne)startRest(S.config.rest);
+    }
+    saveCfg(2500);const y=$("#view").scrollTop;render();$("#view").scrollTop=y},
+  addSet:d=>{const it=S.active.items[+d.i],l=it.sets[it.sets.length-1];it.sets.push({w:l?l.w:"",r:"",ok:false});saveCfg(2500);keep()},
+  delSet:d=>{S.active.items[+d.i].sets.pop();saveCfg(2500);keep()},
+  swap:d=>exPicker("swap",+d.i),
+  doSwap:d=>{const i=+d.i,old=S.active.items[i],n=mkItem(d.ex,{ex:d.ex,sets:old.t.sets,min:old.t.min,max:old.t.max},S.active.date);
+    const e=EX(d.ex);
+    if(e.type==="w")S.active.items[i]=n;
+    else{const b=S.routines.reduce((a,r)=>a||r.items.find(x=>x.ex===d.ex),null)||(e.type==="c"?{ex:d.ex,sets:1,min:10,max:10}:e.type==="t"?{ex:d.ex,sets:old.t.sets,min:20,max:45}:{ex:d.ex,sets:old.t.sets,min:8,max:12});
+      S.active.items[i]=mkItem(d.ex,b,S.active.date)}
+    closeSheet();saveCfg();keep()},
+  finish,
+  askDiscard:()=>confirmSheet("Descartar la sessió?","Es perdrà el que has apuntat avui en aquesta sessió.","discard","Descarta-la"),
+  discard:()=>{S.active=null;ui.session=false;stopRest();closeSheet();saveCfg(50);render()},
+  restAdj:d=>{rest.end+=(+d.n)*1000;rest.total=Math.max(rest.total,(rest.end-Date.now())/1000);tick()},
+  restStop:stopRest,
+  addSess:()=>{const p=planFor(ui.sel),ov=hasOv(ui.sel)?S.overrides[ui.sel]:null,pin=ov&&ov!=="+";
+    openSheet('<div><div class="eyebrow">'+longDate(ui.sel)+'</div><h2 class="h2" style="margin-top:4px">'+(p?"Quina rutina vols aquest dia?":"Afegeix una sessió")+'</h2></div><div>'+
+      '<button class="pick" data-act="setSess" data-v="+"><span class="plate pl4">↻</span><span class="grow"><b>La que toqui per ordre</b><br><span class="small muted">Segueix la seqüència '+S.routines.map(r=>esc(r.tag)).join(", ")+(p&&!pin?" · és el que hi ha ara":"")+'</span></span></button>'+
+      S.routines.map(r=>'<button class="pick '+pl(r.id)+'" data-act="setSess" data-v="'+esc(r.id)+'"><span class="plate">'+esc(r.tag)+'</span><span class="grow"><b>'+esc(r.name)+'</b><br><span class="small muted">Fixada aquest dia'+(pin&&ov===r.id?" · és el que hi ha ara":"")+"</span></span></button>").join("")+
+      '</div><button class="btn block" data-act="closeSheet">Cancel·la</button>')},
+  setSess:d=>{const had=!!planFor(ui.sel);setPlan(ui.sel,d.v);closeSheet();saveCfg();keep();const p=planFor(ui.sel);if(p)toast(had?"Ara aquest dia toca "+p.name+".":p.name+" afegida a "+longDate(ui.sel)+".")},
+  rmSess:()=>{if(!planFor(ui.sel))return;setPlan(ui.sel,null);saveCfg();keep();toast(S.config.flex?"Sessió treta.":"Sessió treta. Les següents segueixen l'ordre "+S.routines.map(x=>x.tag).join(", ")+".")},
+  moveMode:()=>{ui.moving=ui.sel;render();$("#view").scrollTop=0},
+  moveCancel:()=>{ui.moving=null;keep()},
+  selDay:d=>{if(ui.moving){if(d.d===ui.moving){ui.moving=null;keep()}else if(!moveSession(ui.moving,d.d))toast("Aquest dia no pot ser: ja ha passat o ja té una sessió feta.");return}ui.sel=d.d;ui.month=d.d.slice(0,7)+"-01";keep()},
+  month:d=>{const m=parse(ui.month);m.setMonth(m.getMonth()+(+d.n));ui.month=iso(m);render()},
+  askDelLog:d=>confirmSheet("Esborrar la sessió?","S'esborraran els pesos i repeticions del "+longDate(d.d)+".","delLog","Esborra-la",'data-d="'+d.d+'"'),
+  delLog:d=>{S.log[d.d]={del:true,t:Date.now(),items:[]};closeSheet();saveLog(d.d);render()},
+  rsel:d=>{ui.rsel=+d.i;render()},
+  addRoutine:()=>{const tag="ABCDE".split("").find(t=>!S.routines.some(r=>r.tag===t))||"X";S.routines.push({id:tag+Date.now().toString(36),tag,name:"Rutina "+tag,items:[]});ui.rsel=S.routines.length-1;saveCfg();render()},
+  askDelRoutine:()=>confirmSheet("Esborrar la rutina?","El calendari alternarà només les que quedin. Les sessions ja fetes es conserven.","delRoutine","Esborra-la"),
+  delRoutine:()=>{S.routines.splice(ui.rsel,1);ui.rsel=0;closeSheet();saveCfg();render()},
+  mv:d=>{const a=S.routines[ui.rsel].items,i=+d.i,j=i+(+d.n);if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];saveCfg();keep()},
+  rmItem:d=>{S.routines[ui.rsel].items.splice(+d.i,1);saveCfg();keep()},
+  addEx:()=>exPicker("add"),
+  doAdd:d=>{const e=EX(d.ex);S.routines[ui.rsel].items.push(e.type==="c"?{ex:e.id,sets:1,min:10,max:10}:e.type==="t"?{ex:e.id,sets:3,min:20,max:45}:{ex:e.id,sets:3,min:8,max:12});closeSheet();saveCfg();keep()},
+  newEx:()=>{const name=$("#nx-name").value.trim();if(!name){toast("Posa-li un nom.");$("#nx-name").focus();return}
+    const e={id:"c"+Date.now().toString(36),name,group:$("#nx-group").value,type:$("#nx-type").value,inc:2.5,cue:""};S.customEx.push(e);ACT.doAdd({ex:e.id})},
+  day:d=>{const i=+d.i,a=S.config.days,k=a.indexOf(i);if(k>=0){if(a.length===1){toast("Cal almenys un dia d'entrenament.");return}a.splice(k,1)}else{a.push(i);a.sort()}S.config.perWeek=a.length;saveCfg();keep()},
+  nDays:d=>{const c=S.config,n=Math.max(1,Math.min(7,perWeek()+(+d.n)));if(c.flex)c.perWeek=n;else c.days=PRESET[n].slice();c.perWeek=n;saveCfg();keep()},
+  mode:d=>{const c=S.config,n=perWeek(),f=d.v==="flex";if(f===!!c.flex)return;c.flex=f;c.perWeek=n;if(!f&&c.days.length!==n)c.days=PRESET[n].slice();saveCfg();keep()},
+  askTpl:d=>openSheet('<h2 class="h2">Canviar a '+TPL[d.k].name+'?</h2><p class="muted">'+TPL[d.k].desc+' Substituiran les rutines que tens ara, inclosos els canvis que hi hagis fet. L\'historial de sessions es conserva.</p><button class="btn block primary" data-act="applyTpl" data-k="'+d.k+'">Canvia les rutines</button><button class="btn block" data-act="closeSheet">Deixa-les com estan</button>'),
+  applyTpl:d=>{S.routines=tplRoutines(d.k);S.config.tpl=d.k;S.overrides={};ui.rsel=0;closeSheet();saveCfg();keep();toast("Rutines canviades a "+TPL[d.k].name+".")},
+  restCfg:d=>{S.config.rest=Math.max(30,Math.min(300,S.config.rest+(+d.n)));saveCfg();keep()},
+  export:async()=>{const txt=JSON.stringify(S);try{await navigator.clipboard.writeText(txt);toast("Còpia de seguretat copiada. Enganxa-la a les teves notes.")}catch(e){openSheet('<h2 class="h2">Còpia de seguretat</h2><p class="muted">Selecciona el text i copia\'l.</p><textarea class="text-in" id="exp" rows="8" readonly aria-label="Dades"></textarea><button class="btn block" data-act="closeSheet">Tanca</button>');$("#exp").value=txt}},
+  askReset:()=>confirmSheet("Esborrar-ho tot?","S'esborraran les rutines personalitzades, el calendari i tot l'historial. No es pot desfer.","reset","Sí, esborra-ho tot"),
+  reset:()=>{const old=S.log,n=defaults();Object.keys(old).forEach(d=>n.log[d]={del:true,t:Date.now(),items:[]});S=n;stopRest();closeSheet();saveCfg(50);Object.keys(n.log).forEach(saveLog);go("avui")}
+};
+function keep(){const y=$("#view").scrollTop;render();$("#view").scrollTop=y}
+/* drag sessions between calendar days: mouse drags at once, a finger holds for a moment first */
+const drag={on:false,from:null,id:null,x:0,y:0,sx:0,sy:0,touch:false,timer:null,ghost:null,over:null,endT:0};
+function dragStart(){const p=drag.from&&planFor(drag.from);if(!p)return;drag.on=true;
+  const g=document.createElement("span");g.className="plate ghost "+pl(p.id);g.textContent=p.tag;document.body.appendChild(g);drag.ghost=g;
+  const src=document.querySelector('.cal .day[data-d="'+drag.from+'"]');if(src)src.classList.add("src");
+  try{if(navigator.vibrate)navigator.vibrate(12)}catch(e){}dragMove(drag.x,drag.y)}
+function dragMove(x,y){drag.ghost.style.left=x+"px";drag.ghost.style.top=y+"px";
+  const el=document.elementFromPoint(x,y),b=el&&el.closest?el.closest(".cal .day[data-d]"):null,t=b&&canDrop(drag.from,b.dataset.d)?b:null;
+  if(drag.over&&drag.over!==t)drag.over.classList.remove("drop");if(t)t.classList.add("drop");drag.over=t}
+function dragEnd(commit){clearTimeout(drag.timer);const was=drag.on,to=drag.over&&drag.over.dataset.d,from=drag.from;
+  if(drag.ghost)drag.ghost.remove();document.querySelectorAll(".day.src,.day.drop").forEach(e=>e.classList.remove("src","drop"));
+  drag.on=false;drag.from=null;drag.ghost=null;drag.over=null;if(was){drag.endT=Date.now();if(commit&&to)moveSession(from,to)}}
+document.addEventListener("pointerdown",e=>{const b=e.target.closest&&e.target.closest(".cal .day[data-d]");
+  if(!b||ui.moving||!movable(b.dataset.d)||(e.pointerType==="mouse"&&e.button!==0))return;dragEnd(false);
+  drag.from=b.dataset.d;drag.id=e.pointerId;drag.x=drag.sx=e.clientX;drag.y=drag.sy=e.clientY;drag.touch=e.pointerType!=="mouse";
+  if(drag.touch)drag.timer=setTimeout(dragStart,350)});
+document.addEventListener("pointermove",e=>{if(!drag.from||e.pointerId!==drag.id)return;drag.x=e.clientX;drag.y=e.clientY;
+  if(drag.on){dragMove(e.clientX,e.clientY);return}const d=Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy);
+  if(drag.touch){if(d>10)dragEnd(false)}else if(d>6)dragStart()});
+document.addEventListener("pointerup",e=>{if(drag.from&&e.pointerId===drag.id)dragEnd(true)});
+document.addEventListener("pointercancel",e=>{if(drag.from&&e.pointerId===drag.id)dragEnd(false)});
+document.addEventListener("touchmove",e=>{if(drag.on)e.preventDefault()},{passive:false});
+document.addEventListener("contextmenu",e=>{if(drag.from)e.preventDefault()});
+document.addEventListener("click",e=>{
+  if(Date.now()-drag.endT<400)return;
+  if(e.target.id==="sheet"){closeSheet();return}
+  const b=e.target.closest("[data-act]");if(!b||b.disabled)return;const f=ACT[b.dataset.act];if(f)f(b.dataset,b);
+});
+document.addEventListener("input",e=>{const t=e.target;if(!t.dataset||!t.dataset.in||!S.active)return;
+  const it=S.active.items[+t.dataset.i];if(!it)return;it.sets[+t.dataset.j][t.dataset.in]=t.value;saveCfg(2500)});
+document.addEventListener("change",e=>{const t=e.target,k=t.dataset&&t.dataset.ch;if(!k)return;const r=S.routines[ui.rsel],c=S.config;
+  const int=(v,lo,hi,fb)=>{const n=Math.round(num(v));return isFinite(n)?Math.max(lo,Math.min(hi,n)):fb};
+  if(k==="override"){const had=!!planFor(ui.sel),v=t.value;setPlan(ui.sel,v||null);saveCfg();keep();
+    if(!v&&had&&!c.flex)toast("Sessió treta. Les següents segueixen l'ordre "+S.routines.map(x=>x.tag).join(", ")+".")}
+  else if(k==="rname"){r.name=t.value.trim()||"Rutina "+r.tag;saveCfg();keep()}
+  else if(k==="isets"){const it=r.items[+t.dataset.i];it.sets=int(t.value,1,8,it.sets);saveCfg();keep()}
+  else if(k==="imin"){const it=r.items[+t.dataset.i];it.min=int(t.value,1,600,it.min);if(it.max<it.min)it.max=it.min;saveCfg();keep()}
+  else if(k==="imax"){const it=r.items[+t.dataset.i];it.max=int(t.value,1,600,it.max);if(EX(it.ex).type==="c")it.min=it.max;if(it.min>it.max)it.min=it.max;saveCfg();keep()}
+  else if(k==="pex"){ui.pex=t.value;keep()}
+  else if(k==="start"){if(/^\d{4}-\d\d-\d\d$/.test(t.value)){c.start=t.value;saveCfg()}keep()}
+  else if(k==="program"){c.program=t.checked;saveCfg()}
+  else if(k==="sound"){c.sound=t.checked;saveCfg()}
+});
+function fromHash(){const h=(location.hash||"").slice(1);if(["avui","calendari","rutines","progres","ajustos"].includes(h)&&h!==ui.tab){ui.tab=h;ui.session=false;render()}}
+window.addEventListener("hashchange",fromHash);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&store.dirty.size){clearTimeout(store.timer);flush()}});
+{const h=(location.hash||"").slice(1);if(["avui","calendari","rutines","progres","ajustos"].includes(h))ui.tab=h}
+render();initCloud();
+</script>
+</body>
+</html>
