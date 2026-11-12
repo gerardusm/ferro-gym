@@ -333,8 +333,8 @@ const logDates=()=>Object.keys(S.log).filter(d=>!S.log[d].del).sort();
 const store={db:null,uid:null,status:"local",dirty:new Set(),busy:false,timer:null};
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 function queue(id,wait){store.dirty.add(id);clearTimeout(store.timer);store.timer=setTimeout(flush,wait||1200)}
-function saveCfg(wait){schedReset();S.t=Date.now();saveLocal();queue("config",wait)}
-function saveLog(date){saveLocal();queue("log-"+date.slice(0,7))}
+function saveCfg(wait){schedReset();S.t=Date.now();saveLocal();queue("config",wait);ghQueue()}
+function saveLog(date){saveLocal();queue("log-"+date.slice(0,7));ghQueue()}
 function body(id){
   if(id==="config")return clone({t:S.t,config:S.config,routines:S.routines,overrides:S.overrides,customEx:S.customEx,active:S.active});
   const m=id.slice(4),days={};Object.keys(S.log).forEach(d=>{if(d.startsWith(m))days[d]=S.log[d]});return clone({days});
@@ -371,6 +371,67 @@ async function initCloud(){
     schedReset();store.status="cloud";saveLocal();flush();
     if(!ui.session&&$("#sheet").hidden)render();
   }catch(e){store.status="local"}
+}
+
+/* ---------- optional sync with a private GitHub repository (only outside Claude) ----------
+   The token lives in its own localStorage key: it is never part of S, the backup copy or the synced file. */
+const GHK="ferro-gym-gh",GHFILE="ferro-gym-dades.json";
+const gh={repo:"",token:"",last:0,state:"off",msg:"",timer:null,busy:false,dirty:false};
+try{const o=JSON.parse(localStorage.getItem(GHK)||"null");if(o){gh.repo=o.repo||"";if(o.token){gh.token=o.token;gh.last=o.last||0;gh.state="ok"}}}catch(e){}
+function ghSave(){try{localStorage.setItem(GHK,JSON.stringify({repo:gh.repo,token:gh.token,last:gh.last}))}catch(e){}}
+const ghApi=(path,opt)=>fetch("https://api.github.com/repos/"+gh.repo+path,Object.assign({headers:{Authorization:"Bearer "+gh.token,Accept:"application/vnd.github+json"},cache:"no-store"},opt||{}));
+const b64e=t=>{const b=new TextEncoder().encode(t);let o="";for(let i=0;i<b.length;i+=8192)o+=String.fromCharCode.apply(null,b.subarray(i,i+8192));return btoa(o)};
+const b64d=t=>{const bin=atob(t.replace(/\s/g,"")),b=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return new TextDecoder().decode(b)};
+const fullState=()=>clone({v:1,t:S.t,config:S.config,routines:S.routines,overrides:S.overrides,customEx:S.customEx,active:S.active,log:S.log});
+function mergeState(b){
+  let pull=false,push=false;
+  if(b&&b.config&&b.routines){
+    if((b.t||0)>(S.t||0)){const editing=ui.session&&S.active;S.t=b.t;S.config=clone(b.config);S.routines=clone(b.routines);S.overrides=clone(b.overrides||{});S.customEx=clone(b.customEx||[]);if(!editing)S.active=b.active?clone(b.active):null;pull=true}
+    else if((S.t||0)>(b.t||0))push=true;
+  }else if(S.t)push=true;
+  const rl=(b&&b.log)||{};
+  Object.keys(rl).forEach(k=>{const r=rl[k];if(!S.log[k]||(r.t||0)>(S.log[k].t||0)){S.log[k]=clone(r);pull=true}});
+  Object.keys(S.log).forEach(k=>{const r=rl[k];if(!r||(S.log[k].t||0)>(r.t||0))push=true});
+  return{pull,push};
+}
+async function ghSync(){
+  if(!gh.token||gh.busy)return;gh.busy=true;gh.dirty=false;gh.state="sync";ghPaint();
+  try{
+    for(let attempt=0;attempt<2;attempt++){
+      const r=await ghApi("/contents/"+GHFILE);let remote=null,sha=null;
+      if(r.status===200){const j=await r.json();sha=j.sha;try{remote=JSON.parse(b64d(j.content||""))}catch(e){remote=null}}
+      else if(r.status===401)throw new Error("El token no és vàlid o ha caducat.");
+      else if(r.status===403)throw new Error("El token no té permís per llegir aquest repositori.");
+      else if(r.status!==404)throw new Error("GitHub ha respost amb l'error "+r.status+".");
+      const m=mergeState(remote);
+      if(m.pull){schedReset();saveLocal();queue("config");Object.keys(S.log).forEach(k=>store.dirty.add("log-"+k.slice(0,7)));if(!(ui.session&&S.active)&&$("#sheet").hidden)render()}
+      if(m.push||!remote){
+        const body={message:"Sincronització Ferro Gym · "+today(),content:b64e(JSON.stringify(fullState()))};if(sha)body.sha=sha;
+        const w=await ghApi("/contents/"+GHFILE,{method:"PUT",body:JSON.stringify(body)});
+        if(w.status===409||w.status===422){if(attempt===0)continue;throw new Error("No s'ha pogut desar per un conflicte. Torna-ho a provar.")}
+        if(w.status===403||w.status===404)throw new Error("El token no té permís d'escriptura. Li cal Contents: Read and write.");
+        if(!w.ok)throw new Error("GitHub ha respost amb l'error "+w.status+" en desar.");
+      }
+      break;
+    }
+    gh.last=Date.now();gh.state="ok";gh.msg="";ghSave();
+  }catch(e){gh.state="err";gh.msg=e instanceof TypeError?"Sense connexió amb GitHub. Es tornarà a provar quan n'hi hagi.":e.message}
+  gh.busy=false;ghPaint();if(gh.dirty)ghQueue();
+}
+function ghQueue(wait){if(!gh.token)return;gh.dirty=true;clearTimeout(gh.timer);gh.timer=setTimeout(()=>{if(ui.session&&S.active){ghQueue(15000);return}ghSync()},wait||4000)}
+function ghStatus(){const t=new Date(gh.last);
+  return '<div class="status'+(gh.state==="err"?"":" ok")+'" id="ghStatus"><i></i><span>'+(gh.state==="sync"?"Sincronitzant…":gh.state==="err"?esc(gh.msg):"Sincronitzat"+(gh.last?" · "+(iso(t)===today()?"avui":shortDate(iso(t)))+" a les "+pad(t.getHours())+":"+pad(t.getMinutes()):""))+"</span></div>"}
+function ghPaint(){const el=document.getElementById("ghStatus");if(el&&gh.token)el.outerHTML=ghStatus()}
+function ghCard(){
+  let h='<section class="card"><h2 class="h2">Sincronització amb GitHub</h2>';
+  if(window.claude)return h+'<p class="small muted">Només funciona a la versió publicada a GitHub Pages. Dins de Claude, les dades ja es desen al teu compte.</p></section>';
+  if(gh.token)return h+ghStatus()+'<p class="small muted">Les dades es desen a <b>'+esc(gh.repo)+'</b>, al fitxer '+GHFILE+', uns segons després de cada canvi.</p><div class="row"><button class="btn grow" data-act="ghNow">Sincronitza ara</button><button class="btn grow danger" data-act="ghOff">Desconnecta</button></div></section>';
+  return h+'<p class="small muted">Desa les rutines, el calendari i l\'historial en un repositori privat teu per tenir-ne còpia i veure\'ls a tots els dispositius.</p>'+
+    '<details><summary>Com preparar-ho (una sola vegada)</summary><p>1. Crea a GitHub un repositori <b>privat</b>, per exemple ferro-gym-dades.<br>2. A GitHub, ves a Settings → Developer settings → Personal access tokens → Fine-grained tokens i genera un token nou.<br>3. A Repository access tria Only select repositories i selecciona només aquest repositori.<br>4. A Permissions → Repository permissions, posa Contents en Read and write.<br>5. Copia el token i enganxa\'l aquí, a cada dispositiu.</p></details>'+
+    '<div><label class="eyebrow" for="gh-repo">Repositori privat</label><input class="text-in" id="gh-repo" placeholder="usuari/ferro-gym-dades" value="'+esc(gh.repo)+'" autocapitalize="off" autocomplete="off" spellcheck="false" style="margin-top:6px"></div>'+
+    '<div><label class="eyebrow" for="gh-token">Token</label><input class="text-in" id="gh-token" type="password" placeholder="github_pat_…" autocomplete="off" style="margin-top:6px"></div>'+
+    (gh.state==="err"&&gh.msg?'<p class="small" style="color:var(--warn)"><b>'+esc(gh.msg)+"</b></p>":"")+
+    '<button class="btn block" data-act="ghConnect">Connecta</button><p class="small muted">El token es queda només en aquest dispositiu. No s\'inclou a les còpies de seguretat ni al fitxer sincronitzat.</p></section>';
 }
 
 /* ---------- plan ---------- */
@@ -603,7 +664,7 @@ function vAjustos(){
   '<section class="card"><label class="switch" for="prog"><span><b>Programa de 12 setmanes</b><br><span class="small muted">Adaptació, base, progressió i una setmana de descàrrega. Es repeteix en acabar.</span></span><input type="checkbox" id="prog" data-ch="program"'+(c.program?" checked":"")+"></label></section>"+
   '<section class="card"><div class="row between"><div><b>Descans entre sèries</b><div class="small muted">El compte enrere comença en marcar una sèrie.</div></div><div class="row" style="gap:6px"><button class="sq" data-act="restCfg" data-n="-15" aria-label="Menys descans">−</button><span class="h2 num" style="min-width:52px;text-align:center">'+mmss(c.rest)+'</span><button class="sq" data-act="restCfg" data-n="15" aria-label="Més descans">+</button></div></div>'+
   '<label class="switch" for="snd"><span><b>So en acabar el descans</b></span><input type="checkbox" id="snd" data-ch="sound"'+(c.sound?" checked":"")+"></label></section>"+
-  '<section class="card"><h2 class="h2">Les teves dades</h2><div class="status'+(store.status==="cloud"?" ok":"")+'"><i></i><span>'+(store.status==="cloud"?"Desades al teu compte de Claude. Les veuràs a qualsevol dispositiu.":"Desades només en aquest dispositiu ara mateix.")+'</span></div><button class="btn block" data-act="export">Copia una còpia de seguretat</button><button class="btn block danger" data-act="askReset">Esborra-ho tot i torna a començar</button></section><p class="small muted">Fotos dels exercicis: Free Exercise DB, de domini públic.</p>';
+  ghCard()+'<section class="card"><h2 class="h2">Les teves dades</h2><div class="status'+(store.status==="cloud"||gh.token?" ok":"")+'"><i></i><span>'+(store.status==="cloud"?"Desades al teu compte de Claude. Les veuràs a qualsevol dispositiu.":gh.token?"Desades en aquest dispositiu i al teu repositori de GitHub.":"Desades només en aquest dispositiu ara mateix.")+'</span></div><button class="btn block" data-act="export">Copia una còpia de seguretat</button><button class="btn block danger" data-act="askReset">Esborra-ho tot i torna a començar</button></section><p class="small muted">Fotos dels exercicis: Free Exercise DB, de domini públic.</p>';
 }
 function render(){
   const inS=ui.session&&S.active;
@@ -686,6 +747,22 @@ const ACT={
   mode:d=>{const c=S.config,n=perWeek(),f=d.v==="flex";if(f===!!c.flex)return;c.flex=f;c.perWeek=n;if(!f&&c.days.length!==n)c.days=PRESET[n].slice();saveCfg();keep()},
   askTpl:d=>openSheet('<h2 class="h2">Canviar a '+TPL[d.k].name+'?</h2><p class="muted">'+TPL[d.k].desc+' Substituiran les rutines que tens ara, inclosos els canvis que hi hagis fet. L\'historial de sessions es conserva.</p><button class="btn block primary" data-act="applyTpl" data-k="'+d.k+'">Canvia les rutines</button><button class="btn block" data-act="closeSheet">Deixa-les com estan</button>'),
   applyTpl:d=>{S.routines=tplRoutines(d.k);S.config.tpl=d.k;S.overrides={};ui.rsel=0;closeSheet();saveCfg();keep();toast("Rutines canviades a "+TPL[d.k].name+".")},
+  ghConnect:async(d,btn)=>{
+    const repo=$("#gh-repo").value.trim().replace(/^https?:\/\/github\.com\//,"").replace(/\.git$/,"").replace(/\/+$/,""),token=$("#gh-token").value.trim();
+    if(!/^[\w.-]+\/[\w.-]+$/.test(repo)){toast("Escriu el repositori com usuari/nom.");$("#gh-repo").focus();return}
+    if(!token){toast("Enganxa el token.");$("#gh-token").focus();return}
+    gh.repo=repo;gh.token=token;gh.msg="";btn.disabled=true;btn.textContent="Connectant…";
+    try{const r=await ghApi("");
+      if(r.status===401)throw new Error("El token no és vàlid o ha caducat.");
+      if(r.status===404||r.status===403)throw new Error("No trobo el repositori o el token no hi té accés.");
+      if(!r.ok)throw new Error("GitHub ha respost amb l'error "+r.status+".");
+      const j=await r.json();if(!j.private)throw new Error("Aquest repositori és públic i les teves dades les veuria tothom. Fes-lo privat o tria'n un altre.");
+    }catch(e){gh.token="";gh.state="err";gh.msg=e instanceof TypeError?"No s'ha pogut connectar amb GitHub. Comprova la connexió.":e.message;ghSave();keep();return}
+    ghSave();await ghSync();
+    if(gh.state==="err"){const m=gh.msg;gh.token="";ghSave();gh.state="err";gh.msg=m;keep();return}
+    if(ui.tab==="ajustos")keep();toast("Connectat. Les dades ja són a GitHub.")},
+  ghOff:()=>{gh.token="";gh.state="off";gh.msg="";clearTimeout(gh.timer);ghSave();keep()},
+  ghNow:()=>{ghSync()},
   restCfg:d=>{S.config.rest=Math.max(30,Math.min(300,S.config.rest+(+d.n)));saveCfg();keep()},
   export:async()=>{const txt=JSON.stringify(S);try{await navigator.clipboard.writeText(txt);toast("Còpia de seguretat copiada. Enganxa-la a les teves notes.")}catch(e){openSheet('<h2 class="h2">Còpia de seguretat</h2><p class="muted">Selecciona el text i copia\'l.</p><textarea class="text-in" id="exp" rows="8" readonly aria-label="Dades"></textarea><button class="btn block" data-act="closeSheet">Tanca</button>');$("#exp").value=txt}},
   askReset:()=>confirmSheet("Esborrar-ho tot?","S'esborraran les rutines personalitzades, el calendari i tot l'historial. No es pot desfer.","reset","Sí, esborra-ho tot"),
@@ -737,9 +814,11 @@ document.addEventListener("change",e=>{const t=e.target,k=t.dataset&&t.dataset.c
 });
 function fromHash(){const h=(location.hash||"").slice(1);if(["avui","calendari","rutines","progres","ajustos"].includes(h)&&h!==ui.tab){ui.tab=h;ui.session=false;render()}}
 window.addEventListener("hashchange",fromHash);
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&store.dirty.size){clearTimeout(store.timer);flush()}});
+document.addEventListener("visibilitychange",()=>{const hid=document.visibilityState==="hidden";
+  if(hid&&store.dirty.size){clearTimeout(store.timer);flush()}
+  if(gh.token&&((hid&&gh.dirty)||(!hid&&Date.now()-gh.last>60000))){clearTimeout(gh.timer);ghSync()}});
 {const h=(location.hash||"").slice(1);if(["avui","calendari","rutines","progres","ajustos"].includes(h))ui.tab=h}
-render();initCloud();
+render();initCloud();if(gh.token)ghSync();
 </script>
 </body>
 </html>
