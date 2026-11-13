@@ -429,7 +429,7 @@ function ghCard(){
   return h+'<p class="small muted">Desa les rutines, el calendari i l\'historial en un repositori privat teu per tenir-ne còpia i veure\'ls a tots els dispositius.</p>'+
     '<details><summary>Com preparar-ho (una sola vegada)</summary><p>1. Crea a GitHub un repositori <b>privat</b>, per exemple ferro-gym-dades.<br>2. A GitHub, ves a Settings → Developer settings → Personal access tokens → Fine-grained tokens i genera un token nou.<br>3. A Repository access tria Only select repositories i selecciona només aquest repositori.<br>4. A Permissions → Repository permissions, posa Contents en Read and write.<br>5. Copia el token i enganxa\'l aquí, a cada dispositiu.</p></details>'+
     '<div><label class="eyebrow" for="gh-repo">Repositori privat</label><input class="text-in" id="gh-repo" placeholder="usuari/ferro-gym-dades" value="'+esc(gh.repo)+'" autocapitalize="off" autocomplete="off" spellcheck="false" style="margin-top:6px"></div>'+
-    '<div><label class="eyebrow" for="gh-token">Token</label><input class="text-in" id="gh-token" type="password" placeholder="github_pat_…" autocomplete="off" style="margin-top:6px"></div>'+
+    '<div><label class="eyebrow" for="gh-token">Token</label><input class="text-in" id="gh-token" type="text" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin-top:6px;font-size:14px"></div>'+
     (gh.state==="err"&&gh.msg?'<p class="small" style="color:var(--warn)"><b>'+esc(gh.msg)+"</b></p>":"")+
     '<button class="btn block" data-act="ghConnect">Connecta</button><p class="small muted">El token es queda només en aquest dispositiu. No s\'inclou a les còpies de seguretat ni al fitxer sincronitzat.</p></section>';
 }
@@ -748,13 +748,15 @@ const ACT={
   askTpl:d=>openSheet('<h2 class="h2">Canviar a '+TPL[d.k].name+'?</h2><p class="muted">'+TPL[d.k].desc+' Substituiran les rutines que tens ara, inclosos els canvis que hi hagis fet. L\'historial de sessions es conserva.</p><button class="btn block primary" data-act="applyTpl" data-k="'+d.k+'">Canvia les rutines</button><button class="btn block" data-act="closeSheet">Deixa-les com estan</button>'),
   applyTpl:d=>{S.routines=tplRoutines(d.k);S.config.tpl=d.k;S.overrides={};ui.rsel=0;closeSheet();saveCfg();keep();toast("Rutines canviades a "+TPL[d.k].name+".")},
   ghConnect:async(d,btn)=>{
-    const repo=$("#gh-repo").value.trim().replace(/^https?:\/\/github\.com\//,"").replace(/\.git$/,"").replace(/\/+$/,""),token=$("#gh-token").value.trim();
+    const repo=$("#gh-repo").value.trim().replace(/^https?:\/\/github\.com\//,"").replace(/\.git$/,"").replace(/\/+$/,""),token=$("#gh-token").value.replace(/[\s"'“”‘’<>]/g,"");
+    const shape="El que has enganxat té "+token.length+" caràcters i comença per «"+token.slice(0,11)+"…». Un token vàlid comença per github_pat_ i en té uns 93.";
     if(!/^[\w.-]+\/[\w.-]+$/.test(repo)){toast("Escriu el repositori com usuari/nom.");$("#gh-repo").focus();return}
     if(!token){toast("Enganxa el token.");$("#gh-token").focus();return}
+    if(!/^(github_pat_|ghp_)[A-Za-z0-9_]+$/.test(token)||token.length<40){gh.repo=repo;gh.state="err";gh.msg="Això no sembla un token de GitHub. "+shape;ghSave();keep();return}
     gh.repo=repo;gh.token=token;gh.msg="";btn.disabled=true;btn.textContent="Connectant…";
     try{const r=await ghApi("");
-      if(r.status===401)throw new Error("El token no és vàlid o ha caducat.");
-      if(r.status===404||r.status===403)throw new Error("No trobo el repositori o el token no hi té accés.");
+      if(r.status===401)throw new Error("GitHub no reconeix aquest token: s'ha copiat malament, s'ha regenerat després de copiar-lo o ha caducat. "+shape);
+      if(r.status===404||r.status===403)throw new Error("El token és correcte, però no trobo el repositori "+repo+" o el token no hi té accés.");
       if(!r.ok)throw new Error("GitHub ha respost amb l'error "+r.status+".");
       const j=await r.json();if(!j.private)throw new Error("Aquest repositori és públic i les teves dades les veuria tothom. Fes-lo privat o tria'n un altre.");
     }catch(e){gh.token="";gh.state="err";gh.msg=e instanceof TypeError?"No s'ha pogut connectar amb GitHub. Comprova la connexió.":e.message;ghSave();keep();return}
