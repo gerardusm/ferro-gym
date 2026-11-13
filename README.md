@@ -1,3 +1,5 @@
+<img src="logo.svg" alt="Ferro" width="196">
+
 # Ferro Gym
 
 Webapp personal per programar i seguir rutines de gimnàs. Pensada per al mòbil: s'obre amb Safari i s'afegeix a la pantalla d'inici.
