@@ -6,7 +6,7 @@
 <title>Ferro Gym</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Figtree:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* Layout: one phone-width column, fixed tab bar. Type does the shouting (stamped, condensed
    numerals like the lettering on a weight plate); colour is reserved for the plates themselves:
@@ -15,7 +15,7 @@
   --bg:#eceef2; --surface:#ffffff; --ink:#141922; --muted:#5a6473; --line:#d3d8e0;
   --accent:#141922; --on-accent:#ffffff;
   --p-red:#cf3a2e; --p-blue:#1e5bd0; --p-yellow:#e0a400; --p-green:#1c8f50;
-  --good:#1c8f50; --warn:#b4530a;
+  --good:#1c8f50; --warn:#b4530a; --danger:#cf3a2e; --bgfx:var(--bg); --shadow:none;
   --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
   --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
@@ -25,18 +25,18 @@
     --bg:#0f1217; --surface:#191e26; --ink:#eef1f5; --muted:#99a3b3; --line:#2a313c;
     --accent:#eef1f5; --on-accent:#0f1217;
     --p-red:#e4574b; --p-blue:#4d86f0; --p-yellow:#efb81f; --p-green:#35b06d;
-    --good:#35b06d; --warn:#e58a3c; color-scheme:dark;
+    --good:#35b06d; --warn:#e58a3c; --danger:#e4574b; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#0f1217; --surface:#191e26; --ink:#eef1f5; --muted:#99a3b3; --line:#2a313c;
   --accent:#eef1f5; --on-accent:#0f1217;
   --p-red:#e4574b; --p-blue:#4d86f0; --p-yellow:#efb81f; --p-green:#35b06d;
-  --good:#35b06d; --warn:#e58a3c; color-scheme:dark;
+  --good:#35b06d; --warn:#e58a3c; --danger:#e4574b; color-scheme:dark;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--ink);font:400 16px/1.45 var(--body);-webkit-text-size-adjust:100%}
+body{background:var(--bgfx);color:var(--ink);font:400 16px/1.45 var(--body);-webkit-text-size-adjust:100%}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 :focus-visible{outline:3px solid var(--p-blue);outline-offset:2px}
@@ -48,6 +48,7 @@ h1,h2,h3,p{margin:0}
 .icon-btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:40px;height:40px;display:grid;place-items:center}
 #view{flex:1;overflow-y:auto;padding:4px 16px 24px;display:flex;flex-direction:column;gap:16px}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--surface);padding-bottom:env(safe-area-inset-bottom)}
+.tabs[hidden],.icon-btn[hidden]{display:none}
 .tabs button{border:0;background:none;padding:11px 4px 10px;font:600 13px var(--body);color:var(--muted);border-top:3px solid transparent;margin-top:-1px;display:flex;flex-direction:column;align-items:center;gap:5px;min-height:68px}
 .tabs svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .tabs button[aria-current="page"] svg{stroke-width:2.4}
@@ -66,7 +67,7 @@ h1,h2,h3,p{margin:0}
 .btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font:800 20px var(--display);letter-spacing:.06em;text-transform:uppercase;padding:14px 18px}
 .btn.block{width:100%}
 .btn.sm{min-height:36px;padding:6px 12px;font-size:14px;border-radius:10px}
-.btn.danger{color:var(--p-red)}
+.btn.danger{color:var(--danger)}
 .link{border:0;background:none;padding:6px 0;color:var(--muted);text-decoration:underline;font-size:14px}
 
 .pl0{--pc:var(--p-red);--pt:#fff}.pl1{--pc:var(--p-blue);--pt:#fff}.pl2{--pc:var(--p-yellow);--pt:#1c1500}
@@ -93,7 +94,7 @@ h1,h2,h3,p{margin:0}
 button.thb{border:0;padding:0;background:none;border-radius:7px;flex:none}
 .photos{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .photos figure{margin:0;position:relative}
-.photos img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:9px;display:block;background:var(--line)}
+.photos img{width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:9px;display:block;background:var(--line)}
 .photos figcaption{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:5px}
 .exlist .t{font:600 18px/1.3 var(--display);letter-spacing:.03em;white-space:nowrap}
 
@@ -193,6 +194,94 @@ svg.chart{width:100%;height:auto;display:block}
 .status i{width:10px;height:10px;border-radius:50%;background:var(--warn)} .status.ok i{background:var(--good)}
 @media (prefers-reduced-motion:no-preference){.sheet-card{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px)}to{transform:none}}}
 @media (max-width:360px){.big{font-size:38px}.tile b{font-size:28px}}
+
+/* ---------- skin "lila": soft violet gradients, rounded sans, pill shapes. Layout idea: floating
+   rounded surfaces on a pale gradient, one saturated violet card as the focal point of each screen. ---------- */
+:root[data-skin="lila"]{
+  --bg:#f4f0fd; --bgfx:linear-gradient(165deg,#f1e8ff 0%,#edf2ff 48%,#fcf1f8 100%); --surface:#ffffff; --ink:#1d1830; --muted:#6c6585; --line:#e7e0f6;
+  --accent:#8a3ffc; --on-accent:#ffffff; --p-red:#9a4dff; --p-blue:#4a8af4; --p-yellow:#ff9d3c; --p-green:#1fae7a;
+  --good:#1fae7a; --warn:#c2570c; --danger:#d6336c; --shadow:0 8px 26px rgba(112,72,200,.11);
+  --display:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --body:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root[data-skin="lila"]:not([data-theme="light"]){
+    --bg:#15111f; --bgfx:linear-gradient(165deg,#1b1332 0%,#13131f 50%,#1d1222 100%); --surface:#221c32; --ink:#f2eefb; --muted:#a69fbe; --line:#322a47;
+    --accent:#a678ff; --on-accent:#150f22; --p-red:#b07bff; --p-blue:#6fa3ff; --p-yellow:#ffb061; --p-green:#3fca95;
+    --good:#3fca95; --warn:#f0954a; --danger:#ff6b9a; --shadow:0 8px 26px rgba(0,0,0,.35); color-scheme:dark;
+  }
+}
+:root[data-skin="lila"][data-theme="dark"]{
+  --bg:#15111f; --bgfx:linear-gradient(165deg,#1b1332 0%,#13131f 50%,#1d1222 100%); --surface:#221c32; --ink:#f2eefb; --muted:#a69fbe; --line:#322a47;
+  --accent:#a678ff; --on-accent:#150f22; --p-red:#b07bff; --p-blue:#6fa3ff; --p-yellow:#ffb061; --p-green:#3fca95;
+  --good:#3fca95; --warn:#f0954a; --danger:#ff6b9a; --shadow:0 8px 26px rgba(0,0,0,.35); color-scheme:dark;
+}
+[data-skin="lila"] body{background-attachment:fixed}
+[data-skin="lila"] .brand{font:800 22px/1 var(--display);letter-spacing:-.02em;text-transform:none}
+[data-skin="lila"] .big{font:800 31px/1.12 var(--display);text-transform:none;letter-spacing:-.025em}
+[data-skin="lila"] .h2{font:700 19px/1.2 var(--display);text-transform:none;letter-spacing:-.015em}
+[data-skin="lila"] .eyebrow{text-transform:none;letter-spacing:0;font-size:13px}
+[data-skin="lila"] .big::first-letter,[data-skin="lila"] .h2::first-letter,[data-skin="lila"] .eyebrow::first-letter{text-transform:uppercase}
+[data-skin="lila"] .card{border:0;border-radius:24px;box-shadow:var(--shadow)}
+[data-skin="lila"] .btn{border-radius:16px}
+[data-skin="lila"] .btn.sm,[data-skin="lila"] .chip{border-radius:999px}
+[data-skin="lila"] .btn.primary{font:700 16px var(--body);letter-spacing:0;text-transform:none;border-radius:999px;background:linear-gradient(135deg,#a54bff,#7a2ff2);border-color:transparent;color:#fff;box-shadow:0 8px 20px rgba(138,63,252,.32)}
+[data-skin="lila"] .icon-btn{border:0;border-radius:50%;box-shadow:var(--shadow);width:44px;height:44px}
+[data-skin="lila"] .plate{font:800 16px/1 var(--display)}
+[data-skin="lila"] .plate.lg{font-size:22px}
+[data-skin="lila"] .exlist .t{font:700 14px/1.3 var(--body);letter-spacing:0}
+[data-skin="lila"] .th{border-radius:10px}
+[data-skin="lila"] .photos img{border-radius:16px}
+[data-skin="lila"] .feature{background:linear-gradient(150deg,#a64dff,#7528ee);color:#fff;box-shadow:0 12px 28px rgba(122,47,242,.3)}
+[data-skin="lila"] .feature .eyebrow,[data-skin="lila"] .feature .muted,[data-skin="lila"] .feature .ph span{color:rgba(255,255,255,.82)}
+[data-skin="lila"] .feature .ph.cur span{color:#fff}
+[data-skin="lila"] .feature .seg{background:rgba(255,255,255,.28)}
+[data-skin="lila"] .feature .seg.past{background:rgba(255,255,255,.62)}
+[data-skin="lila"] .feature .seg.now{background:#fff;box-shadow:0 0 0 2px #8433f5,0 0 0 4px #fff}
+[data-skin="lila"] .wd{border:0;border-radius:999px;box-shadow:var(--shadow);min-height:88px;padding:13px 0 9px}
+[data-skin="lila"] .wd strong{font:700 17px/1 var(--display)}
+[data-skin="lila"] .wd.today{background:linear-gradient(165deg,#a54bff,#7a2ff2);color:#fff;padding:13px 0 9px}
+[data-skin="lila"] .wd.today small{color:rgba(255,255,255,.85)}
+[data-skin="lila"] .wd.today .dot.plan{color:#fff;border-color:#fff}
+[data-skin="lila"] .wd.today .dot.done{box-shadow:0 0 0 2px #fff}
+[data-skin="lila"] .dot{font:800 11px/1 var(--display)}
+[data-skin="lila"] .cal .wk{font:600 11px var(--body);letter-spacing:0}
+[data-skin="lila"] .cal button.day{border-radius:14px}
+[data-skin="lila"] .cal button.day.today{border-color:var(--accent)}
+[data-skin="lila"] .cal button.day.sel{background:var(--accent);color:var(--on-accent)}
+[data-skin="lila"] .cal button.day.sel .dot.plan{color:var(--on-accent);border-color:var(--on-accent)}
+[data-skin="lila"] .cal button.day.drop{outline-color:var(--accent)}
+[data-skin="lila"] .sess-top{background:color-mix(in srgb,var(--bg) 82%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+[data-skin="lila"] .clock{font:800 26px/1 var(--display);letter-spacing:-.02em}
+[data-skin="lila"] .rest .clock{font-size:32px}
+[data-skin="lila"] .ex h3{font:700 19px/1.2 var(--display);text-transform:none;letter-spacing:-.015em}
+[data-skin="lila"] .hint{border-left-color:var(--accent)}
+[data-skin="lila"] .set .n{font:700 15px var(--body)}
+[data-skin="lila"] .fld{border-radius:14px;border-color:transparent}
+[data-skin="lila"] .fld:focus-within{border-color:var(--accent)}
+[data-skin="lila"] .fld input{font:700 19px/1 var(--display);letter-spacing:0}
+[data-skin="lila"] .chk{border-radius:14px}
+[data-skin="lila"] .rest{border-radius:22px;bottom:calc(98px + env(safe-area-inset-bottom));background:linear-gradient(135deg,#a54bff,#7a2ff2);color:#fff}
+[data-skin="lila"] .rest button{border-color:rgba(255,255,255,.4);border-radius:999px}
+[data-skin="lila"] .rest .bar{background:rgba(255,255,255,.28)}
+[data-skin="lila"] .rest .bar i{background:#fff}
+[data-skin="lila"] #toast{bottom:calc(112px + env(safe-area-inset-bottom));border-radius:14px}
+[data-skin="lila"] .chip{border:0;box-shadow:var(--shadow)}
+[data-skin="lila"] .chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+[data-skin="lila"] .sq{border:0;border-radius:12px;box-shadow:var(--shadow)}
+[data-skin="lila"] .mini input,[data-skin="lila"] .text-in,[data-skin="lila"] .sel{border-radius:14px;border-color:transparent}
+[data-skin="lila"] .tile{border:0;border-radius:20px;box-shadow:var(--shadow)}
+[data-skin="lila"] .tile b{font:800 25px/1.15 var(--display);letter-spacing:-.02em}
+[data-skin="lila"] .bars .b em{font:700 12px var(--body)}
+[data-skin="lila"] .bars .b i{border-radius:8px}
+[data-skin="lila"] .bars .b.some i{background:var(--p-blue)}
+[data-skin="lila"] .tabs{margin:0 12px calc(10px + env(safe-area-inset-bottom));padding-bottom:0;border:0;border-radius:26px;box-shadow:0 10px 30px rgba(90,60,170,.2)}
+[data-skin="lila"] .tabs button{border-top:0;margin-top:0;border-radius:26px}
+[data-skin="lila"] .tabs button[aria-current="page"]{color:var(--accent)}
+[data-skin="lila"] .sheet-card{border-radius:28px 28px 0 0}
+[data-skin="lila"] .switch input{accent-color:var(--accent)}
+[data-skin="lila"] :focus-visible{outline-color:var(--accent)}
+@media (max-width:360px){[data-skin="lila"] .big{font-size:27px}[data-skin="lila"] .tile b{font-size:21px}}
 </style>
 </head>
 <body>
@@ -559,7 +648,7 @@ function dotFor(date){
 function vAvui(){
   const td=today(),d=parse(td),wi=weekInfo(td),en=entry(td),p=todayPlan(),fx=S.config.flex;let h="";
   h+='<section><div class="eyebrow">'+WDL[dow(td)]+'</div><h1 class="big">'+d.getDate()+" "+deMes(d.getMonth())+"</h1></section>";
-  if(S.config.program&&wi)h+='<section class="card"><div class="row between"><div><div class="eyebrow">Bloc '+wi.block+" · setmana "+wi.week+' de 12</div><div class="h2" style="margin-top:4px">'+wi.phase.name+'</div></div><div class="h2 num">'+wi.phase.sets+" × "+wi.phase.min+"–"+wi.phase.max+"</div></div>"+blockBar(wi)+'<p class="small muted">'+wi.phase.desc+"</p></section>";
+  if(S.config.program&&wi)h+='<section class="card feature"><div class="row between"><div><div class="eyebrow">Bloc '+wi.block+" · setmana "+wi.week+' de 12</div><div class="h2" style="margin-top:4px">'+wi.phase.name+'</div></div><div class="h2 num">'+wi.phase.sets+" × "+wi.phase.min+"–"+wi.phase.max+"</div></div>"+blockBar(wi)+'<p class="small muted">'+wi.phase.desc+"</p></section>";
   if(S.active)h+='<section class="card '+pl(S.active.rid)+'"><div class="row"><span class="plate lg">'+esc(S.active.tag)+'</span><div class="grow"><div class="eyebrow">Sessió en curs</div><div class="h2">'+esc(S.active.name)+'</div></div></div><button class="btn primary block" data-act="resume">Continua la sessió</button></section>';
   else if(en)h+='<section class="card '+pl(en.rid)+'"><div class="row"><span class="plate lg">'+esc(en.tag||"")+'</span><div class="grow"><div class="eyebrow" style="color:var(--good)">Feta avui · '+en.dur+' min</div><div class="h2">'+esc(en.name)+"</div></div></div>"+logList(en)+'<button class="btn block" data-act="pickRoutine">Fes una altra sessió</button></section>';
   else if(p)h+='<section class="card '+pl(p.id)+'"><div class="row"><span class="plate lg">'+esc(p.tag)+'</span><div class="grow"><div class="eyebrow">'+(fx?"Et toca · queden "+(perWeek()-weekDone(td))+" aquesta setmana":"Avui toca")+" · uns "+estMin(p,td)+' min</div><div class="h2">'+esc(p.name)+"</div></div></div>"+exList(p,td)+'<button class="btn primary block" data-act="start" data-rid="'+esc(p.id)+'">Comença la sessió</button></section>';
@@ -587,7 +676,7 @@ function vCal(){
   h+='<div class="legend"><span><i class="dot done pl1"></i>Feta</span><span><i class="dot plan pl1"></i>Programada</span><span><i class="dot miss"></i>No feta</span><span><b style="color:var(--warn)">S12</b>Descàrrega</span></div><p class="small muted">Per moure una sessió, mantén-la premuda i arrossega-la a un altre dia. Si aquell dia ja en té una, s\'intercanvien.</p>';
   const s=ui.sel,en=entry(s),p=s===td?todayPlan():planFor(s),wi=S.config.program?weekInfo(s):null;
   h+='<section class="card"><div class="row between"><div><div class="eyebrow">'+longDate(s)+"</div>"+(wi&&s>=S.config.start?'<div class="small muted">Setmana '+wi.week+" · "+wi.phase.name+"</div>":"")+"</div>"+(s!==td?'<button class="btn sm" data-act="selDay" data-d="'+td+'">Avui</button>':"")+"</div>";
-  if(en)h+='<div class="row '+pl(en.rid)+'"><span class="plate">'+esc(en.tag||"")+'</span><div class="grow"><b>'+esc(en.name)+'</b><div class="small" style="color:var(--good)">Feta · '+en.dur+" min</div></div></div>"+logList(en)+'<button class="link danger" style="color:var(--p-red);text-align:left" data-act="askDelLog" data-d="'+s+'">Esborra aquesta sessió</button>';
+  if(en)h+='<div class="row '+pl(en.rid)+'"><span class="plate">'+esc(en.tag||"")+'</span><div class="grow"><b>'+esc(en.name)+'</b><div class="small" style="color:var(--good)">Feta · '+en.dur+" min</div></div></div>"+logList(en)+'<button class="link danger" style="color:var(--danger);text-align:left" data-act="askDelLog" data-d="'+s+'">Esborra aquesta sessió</button>';
   else{
     if(p)h+='<div class="row '+pl(p.id)+'"><span class="plate">'+esc(p.tag)+'</span><div class="grow"><b>'+esc(p.name)+'</b><div class="small muted">'+(s<td?"No es va fer":"Uns "+estMin(p,s)+" min")+"</div></div></div>"+(s>=td&&!ui.moving?'<div class="row" style="flex-wrap:wrap;gap:8px"><button class="btn grow" data-act="moveMode">Mou</button><button class="btn grow" data-act="addSess">Canvia la rutina</button><button class="btn grow danger" data-act="rmSess">Treu-la</button></div>':"")+exList(p,s);
     else h+='<p class="muted">'+(S.config.flex?"Sense sessió fixada. Amb l'horari flexible entrenes els dies que vulguis; si vols, fixa'n una aquí.":"Dia de descans.")+"</p>";
@@ -621,7 +710,7 @@ function vRutines(){
     h+='<div class="item"><div class="row">'+(hasImg(e.id)?'<button class="thb" data-act="info" data-ex="'+esc(e.id)+'" aria-label="Fotos de '+esc(e.name)+'">'+thumb(e.id)+"</button>":"")+'<div class="grow"><b>'+esc(e.name)+'</b><div class="small muted">'+e.group+'</div></div><button class="sq" data-act="mv" data-i="'+i+'" data-n="-1" aria-label="Puja" '+(i===0?"disabled":"")+'>↑</button><button class="sq" data-act="mv" data-i="'+i+'" data-n="1" aria-label="Baixa" '+(i===r.items.length-1?"disabled":"")+'>↓</button><button class="sq" data-act="rmItem" data-i="'+i+'" aria-label="Treu">✕</button></div>'+
     '<div class="mini">'+(e.type==="c"?'<input id="mx-'+i+'" data-ch="imax" data-i="'+i+'" inputmode="numeric" value="'+it.max+'" aria-label="Minuts"> min'
       :'<input id="st-'+i+'" data-ch="isets" data-i="'+i+'" inputmode="numeric" value="'+it.sets+'" aria-label="Sèries"> sèries ×<input id="mn-'+i+'" data-ch="imin" data-i="'+i+'" inputmode="numeric" value="'+it.min+'" aria-label="Mínim">a<input id="mx-'+i+'" data-ch="imax" data-i="'+i+'" inputmode="numeric" value="'+it.max+'" aria-label="Màxim"> '+(e.type==="t"?"s":"reps"))+"</div></div>"});
-  h+='<button class="btn block" data-act="addEx">+ Afegeix un exercici</button>'+(S.routines.length>1?'<button class="link" style="color:var(--p-red);text-align:left" data-act="askDelRoutine">Esborra aquesta rutina</button>':"")+"</section>";
+  h+='<button class="btn block" data-act="addEx">+ Afegeix un exercici</button>'+(S.routines.length>1?'<button class="link" style="color:var(--danger);text-align:left" data-act="askDelRoutine">Esborra aquesta rutina</button>':"")+"</section>";
   return h;
 }
 function chart(pts,unit){
@@ -661,12 +750,14 @@ function vAjustos(){
    :'<div class="chips" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">'+WD.map((x,i)=>'<button class="chip" style="padding:8px 0" data-act="day" data-i="'+i+'" aria-pressed="'+c.days.includes(i)+'" aria-label="'+WDL[i]+'">'+x+'</button>').join("")+'</div><p class="small muted">Toca un dia per afegir-lo o treure\'l. El calendari hi va repartint les rutines per ordre.</p>')+
   (rec!==(c.tpl||"full")?'<div class="card" style="background:var(--bg)"><p class="small"><b>Amb '+n+(n===1?" dia":" dies")+" va millor un repartiment de "+TPL[rec].name+".</b> "+TPL[rec].desc+'</p><button class="btn block" data-act="askTpl" data-k="'+rec+'">Adapta les rutines</button></div>':"")+
   '<div><label class="eyebrow" for="start">Inici del programa</label><input class="text-in" type="date" id="start" data-ch="start" value="'+c.start+'" style="margin-top:6px"></div></section>'+
+  '<section class="card"><h2 class="h2">Aspecte</h2><div class="chips"><button class="chip" data-act="skin" data-v="lila" aria-pressed="'+((c.skin||"lila")==="lila")+'">Lila, suau i arrodonit</button><button class="chip" data-act="skin" data-v="ferro" aria-pressed="'+(c.skin==="ferro")+'">Ferro, l\'original</button></div></section>'+
   '<section class="card"><label class="switch" for="prog"><span><b>Programa de 12 setmanes</b><br><span class="small muted">Adaptació, base, progressió i una setmana de descàrrega. Es repeteix en acabar.</span></span><input type="checkbox" id="prog" data-ch="program"'+(c.program?" checked":"")+"></label></section>"+
   '<section class="card"><div class="row between"><div><b>Descans entre sèries</b><div class="small muted">El compte enrere comença en marcar una sèrie.</div></div><div class="row" style="gap:6px"><button class="sq" data-act="restCfg" data-n="-15" aria-label="Menys descans">−</button><span class="h2 num" style="min-width:52px;text-align:center">'+mmss(c.rest)+'</span><button class="sq" data-act="restCfg" data-n="15" aria-label="Més descans">+</button></div></div>'+
   '<label class="switch" for="snd"><span><b>So en acabar el descans</b></span><input type="checkbox" id="snd" data-ch="sound"'+(c.sound?" checked":"")+"></label></section>"+
   ghCard()+'<section class="card"><h2 class="h2">Les teves dades</h2><div class="status'+(store.status==="cloud"||gh.token?" ok":"")+'"><i></i><span>'+(store.status==="cloud"?"Desades al teu compte de Claude. Les veuràs a qualsevol dispositiu.":gh.token?"Desades en aquest dispositiu i al teu repositori de GitHub.":"Desades només en aquest dispositiu ara mateix.")+'</span></div><button class="btn block" data-act="export">Copia una còpia de seguretat</button><button class="btn block danger" data-act="askReset">Esborra-ho tot i torna a començar</button></section><p class="small muted">Fotos dels exercicis: Free Exercise DB, de domini públic.</p>';
 }
 function render(){
+  document.documentElement.dataset.skin=S.config.skin||"lila";
   const inS=ui.session&&S.active;
   $("#view").innerHTML=inS?vSession():({avui:vAvui,calendari:vCal,rutines:vRutines,progres:vProgres,ajustos:vAjustos}[ui.tab]||vAvui)();
   $("#tabs").hidden=!!inS;$("#gear").hidden=!!inS;
@@ -765,6 +856,7 @@ const ACT={
     if(ui.tab==="ajustos")keep();toast("Connectat. Les dades ja són a GitHub.")},
   ghOff:()=>{gh.token="";gh.state="off";gh.msg="";clearTimeout(gh.timer);ghSave();keep()},
   ghNow:()=>{ghSync()},
+  skin:d=>{S.config.skin=d.v;saveCfg();keep()},
   restCfg:d=>{S.config.rest=Math.max(30,Math.min(300,S.config.rest+(+d.n)));saveCfg();keep()},
   export:async()=>{const txt=JSON.stringify(S);try{await navigator.clipboard.writeText(txt);toast("Còpia de seguretat copiada. Enganxa-la a les teves notes.")}catch(e){openSheet('<h2 class="h2">Còpia de seguretat</h2><p class="muted">Selecciona el text i copia\'l.</p><textarea class="text-in" id="exp" rows="8" readonly aria-label="Dades"></textarea><button class="btn block" data-act="closeSheet">Tanca</button>');$("#exp").value=txt}},
   askReset:()=>confirmSheet("Esborrar-ho tot?","S'esborraran les rutines personalitzades, el calendari i tot l'historial. No es pot desfer.","reset","Sí, esborra-ho tot"),
