@@ -289,7 +289,7 @@ svg.chart{width:100%;height:auto;display:block}
   <header class="top">
     <div class="brand">Ferro<i aria-hidden="true"></i></div>
     <button class="icon-btn" id="gear" data-act="go" data-to="ajustos" aria-label="Ajustos">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
   </header>
   <main id="view"></main>
@@ -315,6 +315,7 @@ svg.chart{width:100%;height:auto;display:block}
 </div>
 <script>
 "use strict";
+const VERSION="2026-11-13.3";
 /* ---------- helpers ---------- */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -523,6 +524,22 @@ function ghCard(){
     '<button class="btn block" data-act="ghConnect">Connecta</button><p class="small muted">El token es queda només en aquest dispositiu. No s\'inclou a les còpies de seguretat ni al fitxer sincronitzat.</p></section>';
 }
 
+/* ---------- updates (only outside Claude, where the page does not refresh itself) ---------- */
+const upd={latest:null,busy:false};
+const pageUrl=()=>location.href.split("#")[0].split("?")[0];
+async function checkUpdate(manual){
+  if(window.claude||upd.busy||!/^https?:$/.test(location.protocol))return;upd.busy=true;
+  try{const r=await fetch(pageUrl(),{cache:"reload"});if(!r.ok)throw new Error("http "+r.status);
+    const m=(await r.text()).match(/const VERSION="([^"]+)"/);if(!m)throw new Error("no version");
+    upd.latest=m[1];
+    if(upd.latest!==VERSION){if(manual)ACT.askUpdate();else if(!ui.session&&$("#sheet").hidden)render()}
+    else if(manual)toast("Ja tens l'última versió.");
+  }catch(e){if(manual)toast("No s'ha pogut comprovar. Revisa la connexió i torna-ho a provar.")}
+  upd.busy=false;if(manual&&ui.tab==="ajustos"&&$("#sheet").hidden)keep();
+}
+const hasUpdate=()=>!!upd.latest&&upd.latest!==VERSION;
+const updBanner=()=>hasUpdate()?'<section class="card" style="background:var(--accent);color:var(--on-accent);border-color:var(--accent)"><div class="row between"><div class="grow"><b>Hi ha una versió nova</b><div class="small" style="opacity:.8">'+esc(upd.latest)+'</div></div><button class="btn sm" style="color:var(--ink)" data-act="doUpdate">Actualitza</button></div></section>':"";
+
 /* ---------- plan ---------- */
 const perWeek=()=>S.config.flex?(S.config.perWeek||3):S.config.days.length;
 function weekDone(date){const m=monday(date);return logDates().filter(d=>d>=m&&d<addDays(m,7)).length}
@@ -647,7 +664,7 @@ function dotFor(date){
 }
 function vAvui(){
   const td=today(),d=parse(td),wi=weekInfo(td),en=entry(td),p=todayPlan(),fx=S.config.flex;let h="";
-  h+='<section><div class="eyebrow">'+WDL[dow(td)]+'</div><h1 class="big">'+d.getDate()+" "+deMes(d.getMonth())+"</h1></section>";
+  h+='<section><div class="eyebrow">'+WDL[dow(td)]+'</div><h1 class="big">'+d.getDate()+" "+deMes(d.getMonth())+"</h1></section>"+updBanner();
   if(S.config.program&&wi)h+='<section class="card feature"><div class="row between"><div><div class="eyebrow">Bloc '+wi.block+" · setmana "+wi.week+' de 12</div><div class="h2" style="margin-top:4px">'+wi.phase.name+'</div></div><div class="h2 num">'+wi.phase.sets+" × "+wi.phase.min+"–"+wi.phase.max+"</div></div>"+blockBar(wi)+'<p class="small muted">'+wi.phase.desc+"</p></section>";
   if(S.active)h+='<section class="card '+pl(S.active.rid)+'"><div class="row"><span class="plate lg">'+esc(S.active.tag)+'</span><div class="grow"><div class="eyebrow">Sessió en curs</div><div class="h2">'+esc(S.active.name)+'</div></div></div><button class="btn primary block" data-act="resume">Continua la sessió</button></section>';
   else if(en)h+='<section class="card '+pl(en.rid)+'"><div class="row"><span class="plate lg">'+esc(en.tag||"")+'</span><div class="grow"><div class="eyebrow" style="color:var(--good)">Feta avui · '+en.dur+' min</div><div class="h2">'+esc(en.name)+"</div></div></div>"+logList(en)+'<button class="btn block" data-act="pickRoutine">Fes una altra sessió</button></section>';
@@ -754,7 +771,7 @@ function vAjustos(){
   '<section class="card"><label class="switch" for="prog"><span><b>Programa de 12 setmanes</b><br><span class="small muted">Adaptació, base, progressió i una setmana de descàrrega. Es repeteix en acabar.</span></span><input type="checkbox" id="prog" data-ch="program"'+(c.program?" checked":"")+"></label></section>"+
   '<section class="card"><div class="row between"><div><b>Descans entre sèries</b><div class="small muted">El compte enrere comença en marcar una sèrie.</div></div><div class="row" style="gap:6px"><button class="sq" data-act="restCfg" data-n="-15" aria-label="Menys descans">−</button><span class="h2 num" style="min-width:52px;text-align:center">'+mmss(c.rest)+'</span><button class="sq" data-act="restCfg" data-n="15" aria-label="Més descans">+</button></div></div>'+
   '<label class="switch" for="snd"><span><b>So en acabar el descans</b></span><input type="checkbox" id="snd" data-ch="sound"'+(c.sound?" checked":"")+"></label></section>"+
-  ghCard()+'<section class="card"><h2 class="h2">Les teves dades</h2><div class="status'+(store.status==="cloud"||gh.token?" ok":"")+'"><i></i><span>'+(store.status==="cloud"?"Desades al teu compte de Claude. Les veuràs a qualsevol dispositiu.":gh.token?"Desades en aquest dispositiu i al teu repositori de GitHub.":"Desades només en aquest dispositiu ara mateix.")+'</span></div><button class="btn block" data-act="export">Copia una còpia de seguretat</button><button class="btn block danger" data-act="askReset">Esborra-ho tot i torna a començar</button></section><p class="small muted">Fotos dels exercicis: Free Exercise DB, de domini públic.</p>';
+  ghCard()+'<section class="card"><h2 class="h2">Les teves dades</h2><div class="status'+(store.status==="cloud"||gh.token?" ok":"")+'"><i></i><span>'+(store.status==="cloud"?"Desades al teu compte de Claude. Les veuràs a qualsevol dispositiu.":gh.token?"Desades en aquest dispositiu i al teu repositori de GitHub.":"Desades només en aquest dispositiu ara mateix.")+'</span></div><button class="btn block" data-act="export">Copia una còpia de seguretat</button><button class="btn block danger" data-act="askReset">Esborra-ho tot i torna a començar</button></section><section class="card"><div class="row between"><div><b>Versió '+VERSION+'</b><div class="small muted">'+(window.claude?"Dins de Claude s\'actualitza sola.":hasUpdate()?"Disponible: "+esc(upd.latest):"Si has demanat canvis i no els veus, cerca\'ls aquí.")+'</div></div></div>'+(window.claude?"":hasUpdate()?'<button class="btn block primary" data-act="doUpdate">Actualitza ara</button>':'<button class="btn block" data-act="checkUpdate">Cerca actualitzacions</button>')+'</section><p class="small muted">Fotos dels exercicis: Free Exercise DB, de domini públic.</p>';
 }
 function render(){
   document.documentElement.dataset.skin=S.config.skin||"lila";
@@ -856,6 +873,9 @@ const ACT={
     if(ui.tab==="ajustos")keep();toast("Connectat. Les dades ja són a GitHub.")},
   ghOff:()=>{gh.token="";gh.state="off";gh.msg="";clearTimeout(gh.timer);ghSave();keep()},
   ghNow:()=>{ghSync()},
+  checkUpdate:(d,btn)=>{if(!/^https?:$/.test(location.protocol)){toast("Només es pot comprovar a la versió publicada.");return}btn.disabled=true;btn.textContent="Cercant…";checkUpdate(true)},
+  askUpdate:()=>openSheet('<div><div class="eyebrow">Versió '+esc(upd.latest)+'</div><h2 class="h2" style="margin-top:4px">Hi ha una versió nova</h2></div><p class="muted">L\'app es recarregarà. Les teves dades i la sessió en curs es conserven.</p><button class="btn block primary" data-act="doUpdate">Actualitza ara</button><button class="btn block" data-act="closeSheet">Més tard</button>'),
+  doUpdate:()=>{saveLocal();location.reload()},
   skin:d=>{S.config.skin=d.v;saveCfg();keep()},
   restCfg:d=>{S.config.rest=Math.max(30,Math.min(300,S.config.rest+(+d.n)));saveCfg();keep()},
   export:async()=>{const txt=JSON.stringify(S);try{await navigator.clipboard.writeText(txt);toast("Còpia de seguretat copiada. Enganxa-la a les teves notes.")}catch(e){openSheet('<h2 class="h2">Còpia de seguretat</h2><p class="muted">Selecciona el text i copia\'l.</p><textarea class="text-in" id="exp" rows="8" readonly aria-label="Dades"></textarea><button class="btn block" data-act="closeSheet">Tanca</button>');$("#exp").value=txt}},
@@ -912,7 +932,7 @@ document.addEventListener("visibilitychange",()=>{const hid=document.visibilityS
   if(hid&&store.dirty.size){clearTimeout(store.timer);flush()}
   if(gh.token&&((hid&&gh.dirty)||(!hid&&Date.now()-gh.last>60000))){clearTimeout(gh.timer);ghSync()}});
 {const h=(location.hash||"").slice(1);if(["avui","calendari","rutines","progres","ajustos"].includes(h))ui.tab=h}
-render();initCloud();if(gh.token)ghSync();
+render();initCloud();if(gh.token)ghSync();setTimeout(()=>checkUpdate(false),1500);
 </script>
 </body>
 </html>
