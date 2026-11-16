@@ -192,6 +192,10 @@ svg.chart{width:100%;height:auto;display:block}
 .sheet{position:absolute;inset:0;z-index:10;background:rgba(0,0,0,.5);display:flex;align-items:flex-end}
 .sheet[hidden]{display:none}
 .sheet-card{background:var(--surface);width:100%;max-height:86%;overflow-y:auto;border-radius:18px 18px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
+.sheet-card.tall{max-height:95%}
+.photos.big{grid-template-columns:1fr;gap:10px}
+.photos.big figcaption{left:10px;bottom:10px;font-size:12px;padding:3px 9px}
+.xbtn{flex:none;width:42px;height:42px;border-radius:50%;border:0;background:var(--bg);color:var(--ink);display:grid;place-items:center}
 .pick{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:none;padding:12px 0}
 #toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(98px + env(safe-area-inset-bottom));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;z-index:20;max-width:90%;text-align:center}
 #toast[hidden]{display:none}
@@ -335,7 +339,7 @@ svg.chart{width:100%;height:auto;display:block}
 </div>
 <script>
 "use strict";
-const VERSION="2026-11-16.1";
+const VERSION="2026-11-16.2";
 /* ---------- helpers ---------- */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -880,8 +884,8 @@ function render(){
   $("#tabs").hidden=!!inS;$("#gear").hidden=!!inS;
   document.querySelectorAll("#tabs button").forEach(b=>{if(b.dataset.to===ui.tab)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
 }
-function openSheet(html){$("#sheetBody").innerHTML=html;$("#sheet").hidden=false}
-function closeSheet(){$("#sheet").hidden=true;$("#sheetBody").innerHTML=""}
+function openSheet(html){$("#sheetBody").className="sheet-card";$("#sheetBody").innerHTML=html;$("#sheet").hidden=false}
+function closeSheet(){$("#sheet").hidden=true;$("#sheetBody").innerHTML="";$("#sheetBody").className="sheet-card"}
 let toastT;function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
 function go(tab){ui.tab=tab;ui.session=false;try{if(location.hash!=="#"+tab)location.hash=tab}catch(e){}render();$("#view").scrollTop=0}
 function exPicker(mode,i){
@@ -898,7 +902,10 @@ const confirmSheet=(title,text,act,label,extra)=>openSheet('<h2 class="h2">'+tit
 /* ---------- actions ---------- */
 const ACT={
   go:d=>go(d.to),closeSheet,
-  info:d=>{const e=EX(d.ex);openSheet('<div><div class="eyebrow">'+e.group+'</div><h2 class="h2" style="margin-top:4px">'+esc(e.name)+"</h2></div>"+photos(e)+(e.cue?"<p>"+esc(e.cue)+"</p>":"")+'<button class="btn block" data-act="closeSheet">Tanca</button>')},
+  info:d=>{const e=EX(d.ex);
+    openSheet('<div class="row between" style="align-items:flex-start"><div class="grow"><div class="eyebrow">'+e.group+'</div><h2 class="h2" style="margin-top:4px;font-size:22px">'+esc(e.name)+'</h2></div><button class="xbtn" data-act="closeSheet" aria-label="Tanca"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>'+
+      photos(e).replace('class="photos"','class="photos big"')+(e.cue?'<div><div class="eyebrow">Com es fa</div><p style="margin-top:6px">'+esc(e.cue)+"</p></div>":""));
+    $("#sheetBody").classList.add("tall")},
   start:d=>startSession(d.rid),
   resume:()=>{ui.session=true;render()},
   minimize:()=>{ui.session=false;render();toast("La sessió continua oberta. La trobaràs a Avui.")},
