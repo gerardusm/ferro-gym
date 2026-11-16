@@ -15,9 +15,11 @@ Webapp personal per programar i seguir rutines de gimnàs. Pensada per al mòbil
 
 És una sola pàgina (`index.html`) sense dependències ni servidor. Les dades es desen al navegador del dispositiu (`localStorage`); a Ajustos hi ha un botó per copiar-ne una còpia de seguretat.
 
-## Sincronització amb GitHub (opcional)
+## Comptes d'usuari
 
-A Ajustos es pot connectar un repositori **privat** amb un token d'accés limitat (Contents: Read and write només sobre aquell repositori). L'app hi desa un fitxer `ferro-gym-dades.json` després de cada canvi i el llegeix en obrir-se, de manera que les dades es comparteixen entre dispositius. El token es queda al navegador de cada dispositiu i no s'inclou al fitxer sincronitzat.
+A Ajustos es pot entrar o crear un compte amb correu i contrasenya. Cada usuari té les seves rutines, calendari i historial desats en un projecte de [Supabase](https://supabase.com), i els troba a qualsevol dispositiu on entri. L'app també es pot fer servir sense compte, amb les dades només al dispositiu.
+
+La clau que hi ha al codi és la clau publicable del projecte: només permet que un usuari amb la sessió iniciada llegeixi i escrigui la seva pròpia fila (taula `ferro_data`, protegida amb Row Level Security).
 
 ## Crèdits
 

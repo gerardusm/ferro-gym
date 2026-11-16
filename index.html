@@ -335,7 +335,7 @@ svg.chart{width:100%;height:auto;display:block}
 </div>
 <script>
 "use strict";
-const VERSION="2026-11-13.7";
+const VERSION="2026-11-16.1";
 /* ---------- helpers ---------- */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -426,7 +426,7 @@ function defaults(){
   return {t:0,
     config:{days:[0,2,4],flex:false,perWeek:3,tpl:"full",start:today(),rest:90,program:true,sound:true},
     routines:tplRoutines("full"),
-    overrides:{},customEx:[],active:null,log:{}};
+    overrides:{},customEx:[],active:null,log:{},owner:null};
 }
 let S=defaults();
 const ui={tab:"avui",session:false,month:null,sel:null,rsel:0,pex:null,search:""};
@@ -443,8 +443,8 @@ const logDates=()=>Object.keys(S.log).filter(d=>!S.log[d].del).sort();
 const store={db:null,uid:null,status:"local",dirty:new Set(),busy:false,timer:null};
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 function queue(id,wait){store.dirty.add(id);clearTimeout(store.timer);store.timer=setTimeout(flush,wait||1200)}
-function saveCfg(wait){schedReset();S.t=Date.now();saveLocal();queue("config",wait);ghQueue()}
-function saveLog(date){saveLocal();queue("log-"+date.slice(0,7));ghQueue()}
+function saveCfg(wait){schedReset();S.t=Date.now();saveLocal();queue("config",wait);ghQueue();sbQueue()}
+function saveLog(date){saveLocal();queue("log-"+date.slice(0,7));ghQueue();sbQueue()}
 function body(id){
   if(id==="config")return clone({t:S.t,config:S.config,routines:S.routines,overrides:S.overrides,customEx:S.customEx,active:S.active});
   const m=id.slice(4),days={};Object.keys(S.log).forEach(d=>{if(d.startsWith(m))days[d]=S.log[d]});return clone({days});
@@ -533,6 +533,7 @@ function ghStatus(){const t=new Date(gh.last);
   return '<div class="status'+(gh.state==="err"?"":" ok")+'" id="ghStatus"><i></i><span>'+(gh.state==="sync"?"Sincronitzant…":gh.state==="err"?esc(gh.msg):"Sincronitzat"+(gh.last?" · "+(iso(t)===today()?"avui":shortDate(iso(t)))+" a les "+pad(t.getHours())+":"+pad(t.getMinutes()):""))+"</span></div>"}
 function ghPaint(){const el=document.getElementById("ghStatus");if(el&&gh.token)el.outerHTML=ghStatus()}
 function ghCard(){
+  if(SB.url)return "";
   let h='<section class="card"><h2 class="h2">Sincronització amb GitHub</h2>';
   if(window.claude)return h+'<p class="small muted">Només funciona a la versió publicada a GitHub Pages. Dins de Claude, les dades ja es desen al teu compte.</p></section>';
   if(gh.token)return h+ghStatus()+'<p class="small muted">Les dades es desen a <b>'+esc(gh.repo)+'</b>, al fitxer '+GHFILE+', uns segons després de cada canvi.</p><div class="row"><button class="btn grow" data-act="ghNow">Sincronitza ara</button><button class="btn grow danger" data-act="ghOff">Desconnecta</button></div></section>';
@@ -543,6 +544,82 @@ function ghCard(){
     (gh.state==="err"&&gh.msg?'<p class="small" style="color:var(--warn)"><b>'+esc(gh.msg)+"</b></p>":"")+
     '<button class="btn block" data-act="ghConnect">Connecta</button><p class="small muted">El token es queda només en aquest dispositiu. No s\'inclou a les còpies de seguretat ni al fitxer sincronitzat.</p></section>';
 }
+
+/* ---------- accounts: email + password sign-in and one private row of data per user (Supabase) ----------
+   SB.url and SB.key are public by design: the publishable key only lets a signed-in user reach their own row. */
+const SB={url:"https://fqektufkyciozdvndiho.supabase.co",key:"sb_publishable_IvQRr1x1omXfL1ZjjvQ41g_5EM4QxyB"};
+const SBK="ferro-gym-sb";
+const sb={ses:null,state:"off",msg:"",timer:null,busy:false,dirty:false,last:0,pending:null};
+const sbOn=()=>!!SB.url&&!window.claude;
+try{const o=JSON.parse(localStorage.getItem(SBK)||"null");if(SB.url&&o&&o.refresh){sb.ses=o;sb.state="ok"}}catch(e){}
+if(SB.url)gh.token="";
+function sbStore(){try{if(sb.ses)localStorage.setItem(SBK,JSON.stringify(sb.ses));else localStorage.removeItem(SBK)}catch(e){}}
+function sbFetch(path,opt,auth){const h={apikey:SB.key,"Content-Type":"application/json"};if(auth)h.Authorization="Bearer "+sb.ses.access;
+  return fetch(SB.url+path,Object.assign({cache:"no-store"},opt||{},{headers:Object.assign(h,(opt&&opt.headers)||{})}))}
+function sbSetSession(j){sb.ses={access:j.access_token,refresh:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000,uid:j.user.id,email:j.user.email};sbStore()}
+async function sbRefresh(){
+  const r=await sbFetch("/auth/v1/token?grant_type=refresh_token",{method:"POST",body:JSON.stringify({refresh_token:sb.ses.refresh})});
+  if(!r.ok){if(r.status>=400&&r.status<500&&r.status!==429){sb.ses=null;sbStore()}throw new Error("La sessió ha caducat. Torna a entrar.")}
+  sbSetSession(await r.json())}
+async function sbCall(path,opt){if(sb.ses.exp-Date.now()<60000)await sbRefresh();let r=await sbFetch(path,opt,true);if(r.status===401){await sbRefresh();r=await sbFetch(path,opt,true)}return r}
+async function sbPull(){const r=await sbCall("/rest/v1/ferro_data?select=data&user_id=eq."+sb.ses.uid);
+  if(r.status===404)throw new Error("Falta la taula ferro_data al projecte de Supabase (error 404). Cal executar l'SQL de configuració.");
+  if(r.status===401||r.status===403)throw new Error("El compte no té permís per llegir la taula ferro_data (error "+r.status+"). Revisa l'SQL de configuració.");
+  if(!r.ok)throw new Error("No s'han pogut llegir les dades del compte (error "+r.status+").");const a=await r.json();return a.length?a[0].data:null}
+async function sbPush(){const r=await sbCall("/rest/v1/ferro_data?on_conflict=user_id",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({user_id:sb.ses.uid,data:fullState(),updated_at:new Date().toISOString()})});
+  if(!r.ok)throw new Error("No s'han pogut desar les dades al compte (error "+r.status+").")}
+async function sbSync(){
+  if(!sbOn()||!sb.ses||sb.busy||S.owner!==sb.ses.uid)return;sb.busy=true;sb.dirty=false;sb.state="sync";sbPaint();
+  try{const remote=await sbPull(),m=mergeState(remote);
+    if(m.pull){schedReset();saveLocal();if(!(ui.session&&S.active)&&$("#sheet").hidden)render()}
+    if(m.push||!remote)await sbPush();sb.last=Date.now();sb.state="ok";sb.msg=""}
+  catch(e){sb.state="err";sb.msg=e instanceof TypeError?"Sense connexió. Es tornarà a provar quan n'hi hagi.":e.message}
+  sb.busy=false;if(!sb.ses&&ui.tab==="ajustos"&&$("#sheet").hidden)keep();else sbPaint();if(sb.dirty&&sb.ses)sbQueue()}
+function sbQueue(wait){if(!sbOn()||!sb.ses)return;sb.dirty=true;clearTimeout(sb.timer);sb.timer=setTimeout(()=>{if(ui.session&&S.active){sbQueue(15000);return}sbSync()},wait||4000)}
+function sbStatus(){const t=new Date(sb.last);
+  return '<div class="status'+(sb.state==="err"?"":" ok")+'" id="sbStatus"><i></i><span>'+(sb.state==="sync"?"Sincronitzant…":sb.state==="err"?esc(sb.msg):"Dades desades al compte"+(sb.last?" · "+pad(t.getHours())+":"+pad(t.getMinutes()):""))+"</span></div>"}
+function sbPaint(){const el=document.getElementById("sbStatus");if(el&&sb.ses)el.outerHTML=sbStatus()}
+function sbErr(st,j){const c=j.error_code||j.code||"",m=j.msg||j.error_description||j.message||"";
+  if(c==="invalid_credentials"||/invalid login/i.test(m))return"Correu o contrasenya incorrectes.";
+  if(c==="user_already_exists"||/already registered/i.test(m))return"Ja hi ha un compte amb aquest correu. Prova d'entrar.";
+  if(c==="email_not_confirmed"||/not confirmed/i.test(m))return"Encara no has confirmat el correu. Obre l'enllaç que et vam enviar.";
+  if(c==="signup_disabled"||/signups? (not allowed|disabled)/i.test(m))return"Ara mateix no es poden crear comptes nous. Demana'n un a qui administra l'app.";
+  if(c==="weak_password"||(st===422&&/password/i.test(m)))return"La contrasenya és massa feble. Posa'n una de més llarga.";
+  if(st===429)return"Massa intents seguits. Espera uns minuts.";
+  return m||("Error "+st+".")}
+async function sbAuth(mode,btn){
+  const email=$("#sb-email").value.trim().toLowerCase(),pw=$("#sb-pw").value;
+  if(!/^\S+@\S+\.\S+$/.test(email)){toast("Escriu un correu vàlid.");$("#sb-email").focus();return}
+  if(pw.length<6){toast("La contrasenya ha de tenir almenys 6 caràcters.");$("#sb-pw").focus();return}
+  btn.disabled=true;sb.msg="";
+  try{const r=await sbFetch(mode==="up"?"/auth/v1/signup":"/auth/v1/token?grant_type=password",{method:"POST",body:JSON.stringify({email,password:pw})}),j=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(sbErr(r.status,j));
+    if(!j.access_token){sb.state="info";sb.msg="Compte creat. T'hem enviat un correu per confirmar-lo: obre l'enllaç i després entra aquí.";keep();return}
+    sbSetSession(j);sb.state="ok";await sbAdopt();
+  }catch(e){sb.state="err";sb.msg=e instanceof TypeError?"No s'ha pogut connectar. Comprova la connexió.":e.message;keep()}
+}
+async function sbAdopt(){
+  const uid=sb.ses.uid;let remote;
+  try{remote=await sbPull()}catch(e){sb.state="err";sb.msg=e.message;keep();return}
+  const localHas=logDates().length>0||!!S.t,remoteHas=!!(remote&&(remote.t||Object.keys(remote.log||{}).length));
+  if(S.owner&&S.owner!==uid){S=defaults();schedReset()}
+  else if(!S.owner&&localHas&&remoteHas){
+    openSheet('<h2 class="h2">Què fem amb les dades d\'aquest dispositiu?</h2><p class="muted">En aquest dispositiu hi ha rutines o sessions desades sense compte, i el teu compte ja en té de pròpies.</p><button class="btn block primary" data-act="sbUseRemote">Fes servir les del compte</button><button class="btn block" data-act="sbMerge">Afegeix-hi també les d\'aquest dispositiu</button>');return}
+  S.owner=uid;saveLocal();await sbSync();if($("#sheet").hidden)keep();toast("Sessió iniciada.");
+}
+function sbCard(){
+  if(!SB.url)return"";
+  let h='<section class="card"><h2 class="h2">Compte</h2>';
+  if(window.claude)return h+'<p class="small muted">Els comptes funcionen a la versió publicada a GitHub Pages. Dins de Claude, les dades es desen al teu compte de Claude.</p></section>';
+  if(sb.ses)return h+'<div><b>'+esc(sb.ses.email)+'</b></div>'+sbStatus()+'<p class="small muted">Les teves rutines, el calendari i l\'historial es desen al compte i els trobaràs a qualsevol dispositiu on entris.</p><div class="row"><button class="btn grow" data-act="sbNow">Sincronitza ara</button><button class="btn grow" data-act="sbAskOut">Tanca la sessió</button></div></section>';
+  return h+'<p class="small muted">Entra per desar les teves dades al núvol i veure-les a qualsevol dispositiu. Si no tens compte, posa el correu i una contrasenya i prem "Crea un compte".</p>'+
+    '<div><label class="eyebrow" for="sb-email">Correu</label><input class="text-in" id="sb-email" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" style="margin-top:6px"></div>'+
+    '<div><label class="eyebrow" for="sb-pw">Contrasenya</label><input class="text-in" id="sb-pw" type="password" autocomplete="current-password" style="margin-top:6px"></div>'+
+    (sb.msg?'<p class="small" style="color:var(--'+(sb.state==="info"?"good":"warn")+')"><b>'+esc(sb.msg)+"</b></p>":"")+
+    '<div class="row"><button class="btn grow primary" data-act="sbIn">Entra</button><button class="btn grow" data-act="sbUp">Crea un compte</button></div></section>';
+}
+const sbBanner=()=>{let off=false;try{off=!!localStorage.getItem("ferro-gym-nob")}catch(e){}
+  return sbOn()&&!sb.ses&&!off?'<section class="card"><div><b>Desa les teves dades amb un compte</b><div class="small muted">Entra o crea\'n un per tenir les rutines i l\'historial a qualsevol dispositiu.</div></div><div class="row"><button class="btn grow primary" data-act="go" data-to="ajustos">Entra o crea un compte</button><button class="btn" data-act="sbNoBanner">Ara no</button></div></section>':""};
 
 /* ---------- updates (only outside Claude, where the page does not refresh itself) ---------- */
 const upd={latest:null,busy:false};
@@ -684,7 +761,7 @@ function dotFor(date){
 }
 function vAvui(){
   const td=today(),d=parse(td),wi=weekInfo(td),en=entry(td),p=todayPlan(),fx=S.config.flex;let h="";
-  h+='<section><div class="eyebrow">'+WDL[dow(td)]+'</div><h1 class="big">'+d.getDate()+" "+deMes(d.getMonth())+"</h1></section>"+updBanner();
+  h+='<section><div class="eyebrow">'+WDL[dow(td)]+'</div><h1 class="big">'+d.getDate()+" "+deMes(d.getMonth())+"</h1></section>"+updBanner()+sbBanner();
   if(S.config.program&&wi)h+='<section class="card feature"><div class="row between"><div><div class="eyebrow">Bloc '+wi.block+" · setmana "+wi.week+' de 12</div><div class="h2" style="margin-top:4px">'+wi.phase.name+'</div></div><div class="h2 num">'+wi.phase.sets+" × "+wi.phase.min+"–"+wi.phase.max+"</div></div>"+blockBar(wi)+'<p class="small muted">'+wi.phase.desc+"</p></section>";
   if(S.active)h+='<section class="card '+pl(S.active.rid)+'"><div class="row"><span class="plate lg">'+esc(S.active.tag)+'</span><div class="grow"><div class="eyebrow">Sessió en curs</div><div class="h2">'+esc(S.active.name)+'</div></div></div><button class="btn primary block" data-act="resume">Continua la sessió</button></section>';
   else if(en)h+='<section class="card '+pl(en.rid)+'"><div class="row"><span class="plate lg">'+esc(en.tag||"")+'</span><div class="grow"><div class="eyebrow" style="color:var(--good)">Feta avui · '+en.dur+' min</div><div class="h2">'+esc(en.name)+"</div></div></div>"+logList(en)+'<button class="btn block" data-act="pickRoutine">Fes una altra sessió</button></section>';
@@ -779,7 +856,7 @@ function vProgres(){
 }
 function vAjustos(){
   const c=S.config,n=perWeek(),rec=tplFor(n);
-  return '<section><h1 class="big">Ajustos</h1></section>'+
+  return '<section><h1 class="big">Ajustos</h1></section>'+sbCard()+
   '<section class="card"><h2 class="h2">Dies d\'entrenament</h2>'+
   '<div class="row between"><div><b>Sessions per setmana</b></div><div class="row" style="gap:6px"><button class="sq" data-act="nDays" data-n="-1" aria-label="Un dia menys" '+(n<=1?"disabled":"")+'>−</button><span class="h2 num" style="min-width:36px;text-align:center;font-size:32px">'+n+'</span><button class="sq" data-act="nDays" data-n="1" aria-label="Un dia més" '+(n>=7?"disabled":"")+'>+</button></div></div>'+
   '<div class="chips"><button class="chip" data-act="mode" data-v="fix" aria-pressed="'+!c.flex+'">Dies fixos</button><button class="chip" data-act="mode" data-v="flex" aria-pressed="'+!!c.flex+'">Flexible</button></div>'+
@@ -791,7 +868,7 @@ function vAjustos(){
   '<section class="card"><label class="switch" for="prog"><span><b>Programa de 12 setmanes</b><br><span class="small muted">Adaptació, base, progressió i una setmana de descàrrega. Es repeteix en acabar.</span></span><input type="checkbox" id="prog" data-ch="program"'+(c.program?" checked":"")+"></label></section>"+
   '<section class="card"><div class="row between"><div><b>Descans entre sèries</b><div class="small muted">El compte enrere comença en marcar una sèrie.</div></div><div class="row" style="gap:6px"><button class="sq" data-act="restCfg" data-n="-15" aria-label="Menys descans">−</button><span class="h2 num" style="min-width:52px;text-align:center">'+mmss(c.rest)+'</span><button class="sq" data-act="restCfg" data-n="15" aria-label="Més descans">+</button></div></div>'+
   '<label class="switch" for="snd"><span><b>So en acabar el descans</b></span><input type="checkbox" id="snd" data-ch="sound"'+(c.sound?" checked":"")+"></label></section>"+
-  ghCard()+'<section class="card"><h2 class="h2">Les teves dades</h2><div class="status'+(store.status==="cloud"||gh.token?" ok":"")+'"><i></i><span>'+(store.status==="cloud"?"Desades al teu compte de Claude. Les veuràs a qualsevol dispositiu.":gh.token?"Desades en aquest dispositiu i al teu repositori de GitHub.":"Desades només en aquest dispositiu ara mateix.")+'</span></div><button class="btn block" data-act="export">Copia una còpia de seguretat</button><button class="btn block danger" data-act="askReset">Esborra-ho tot i torna a començar</button></section><section class="card"><div class="row between"><div><b>Versió '+VERSION+'</b><div class="small muted">'+(window.claude?"Dins de Claude s\'actualitza sola.":hasUpdate()?"Disponible: "+esc(upd.latest):"Si has demanat canvis i no els veus, cerca\'ls aquí.")+'</div></div></div>'+(window.claude?"":hasUpdate()?'<button class="btn block primary" data-act="doUpdate">Actualitza ara</button>':'<button class="btn block" data-act="checkUpdate">Cerca actualitzacions</button>')+'</section><p class="small muted">Fotos dels exercicis: Free Exercise DB, de domini públic.</p>';
+  ghCard()+'<section class="card"><h2 class="h2">Les teves dades</h2><div class="status'+(store.status==="cloud"||gh.token||sb.ses?" ok":"")+'"><i></i><span>'+(store.status==="cloud"?"Desades al teu compte de Claude. Les veuràs a qualsevol dispositiu.":sb.ses?"Desades en aquest dispositiu i al teu compte.":gh.token?"Desades en aquest dispositiu i al teu repositori de GitHub.":"Desades només en aquest dispositiu ara mateix.")+'</span></div><button class="btn block" data-act="export">Copia una còpia de seguretat</button><button class="btn block danger" data-act="askReset">Esborra-ho tot i torna a començar</button></section><section class="card"><div class="row between"><div><b>Versió '+VERSION+'</b><div class="small muted">'+(window.claude?"Dins de Claude s\'actualitza sola.":hasUpdate()?"Disponible: "+esc(upd.latest):"Si has demanat canvis i no els veus, cerca\'ls aquí.")+'</div></div></div>'+(window.claude?"":hasUpdate()?'<button class="btn block primary" data-act="doUpdate">Actualitza ara</button>':'<button class="btn block" data-act="checkUpdate">Cerca actualitzacions</button>')+'</section><p class="small muted">Fotos dels exercicis: Free Exercise DB, de domini públic.</p>';
 }
 const hostTheme=document.documentElement.getAttribute("data-theme");
 function applyTheme(){const t=S.config.theme,el=document.documentElement;
@@ -899,6 +976,16 @@ const ACT={
   checkUpdate:(d,btn)=>{if(!/^https?:$/.test(location.protocol)){toast("Només es pot comprovar a la versió publicada.");return}btn.disabled=true;btn.textContent="Cercant…";checkUpdate(true)},
   askUpdate:()=>openSheet('<div><div class="eyebrow">Versió '+esc(upd.latest)+'</div><h2 class="h2" style="margin-top:4px">Hi ha una versió nova</h2></div><p class="muted">L\'app es recarregarà. Les teves dades i la sessió en curs es conserven.</p><button class="btn block primary" data-act="doUpdate">Actualitza ara</button><button class="btn block" data-act="closeSheet">Més tard</button>'),
   doUpdate:()=>{saveLocal();location.reload()},
+  sbIn:(d,b)=>sbAuth("in",b),sbUp:(d,b)=>sbAuth("up",b),sbNow:()=>{sbSync()},
+  sbNoBanner:()=>{try{localStorage.setItem("ferro-gym-nob","1")}catch(e){}keep()},
+  sbUseRemote:async()=>{S=defaults();schedReset();S.owner=sb.ses.uid;saveLocal();closeSheet();await sbSync();keep();toast("Sessió iniciada.")},
+  sbMerge:async()=>{S.owner=sb.ses.uid;saveLocal();closeSheet();await sbSync();keep();toast("Sessió iniciada. Dades afegides al compte.")},
+  sbAskOut:()=>openSheet('<h2 class="h2">Tancar la sessió?</h2><p class="muted">Les teves dades queden desades al compte i s\'esborraran d\'aquest dispositiu. Les recuperaràs quan tornis a entrar.</p><button class="btn block primary" data-act="sbOut">Tanca la sessió</button><button class="btn block" data-act="closeSheet">Cancel·la</button>'),
+  sbOut:async(d,btn)=>{
+    if(!d.force){btn.disabled=true;btn.textContent="Desant…";sb.dirty=true;await sbSync();
+      if(sb.ses&&sb.state==="err"){openSheet('<h2 class="h2">No s\'han pogut desar els últims canvis</h2><p class="muted">'+esc(sb.msg)+' Si tanques la sessió ara, els canvis que no s\'han desat es perdran.</p><button class="btn block danger" data-act="sbOut" data-force="1">Tanca igualment</button><button class="btn block" data-act="closeSheet">Cancel·la</button>');return}}
+    if(sb.ses)sbFetch("/auth/v1/logout",{method:"POST"},true).catch(()=>{});
+    clearTimeout(sb.timer);sb.ses=null;sb.state="off";sb.msg="";sbStore();S=defaults();schedReset();stopRest();saveLocal();closeSheet();go("avui");toast("Sessió tancada.")},
   theme:d=>{S.config.theme=d.v;saveCfg();keep()},
   restCfg:d=>{S.config.rest=Math.max(30,Math.min(300,S.config.rest+(+d.n)));saveCfg();keep()},
   export:async()=>{const txt=JSON.stringify(S);try{await navigator.clipboard.writeText(txt);toast("Còpia de seguretat copiada. Enganxa-la a les teves notes.")}catch(e){openSheet('<h2 class="h2">Còpia de seguretat</h2><p class="muted">Selecciona el text i copia\'l.</p><textarea class="text-in" id="exp" rows="8" readonly aria-label="Dades"></textarea><button class="btn block" data-act="closeSheet">Tanca</button>');$("#exp").value=txt}},
@@ -953,9 +1040,10 @@ function fromHash(){const h=(location.hash||"").slice(1);if(["avui","calendari",
 window.addEventListener("hashchange",fromHash);
 document.addEventListener("visibilitychange",()=>{const hid=document.visibilityState==="hidden";
   if(hid&&store.dirty.size){clearTimeout(store.timer);flush()}
-  if(gh.token&&((hid&&gh.dirty)||(!hid&&Date.now()-gh.last>60000))){clearTimeout(gh.timer);ghSync()}});
+  if(gh.token&&((hid&&gh.dirty)||(!hid&&Date.now()-gh.last>60000))){clearTimeout(gh.timer);ghSync()}
+  if(sb.ses&&((hid&&sb.dirty)||(!hid&&Date.now()-sb.last>60000))){clearTimeout(sb.timer);sbSync()}});
 setTimeout(()=>{const sp=document.getElementById("splash");if(sp)sp.remove()},2400);
-render();initCloud();if(gh.token)ghSync();setTimeout(()=>checkUpdate(false),1500);
+render();initCloud();if(gh.token)ghSync();if(sb.ses)sbSync();setTimeout(()=>checkUpdate(false),1500);
 </script>
 </body>
 </html>
